@@ -23,7 +23,6 @@ set -euo pipefail
 TARGETS=("node_modules" ".next")
 NODE_DIRS=()
 DRY_RUN=false
-
 [[ "${1:-}" == "--dry-run" ]] && DRY_RUN=true
 
 # =============================================================================
@@ -31,9 +30,7 @@ DRY_RUN=false
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# cleanup
-# -----------------------------------------------------------------------------
-# Restaura el estado original de la terminal.
+# cleanup: Restaura el estado original de la terminal.
 # Se ejecuta automáticamente vía trap.
 # -----------------------------------------------------------------------------
 cleanup() {
@@ -42,9 +39,7 @@ cleanup() {
 }
 
 # -----------------------------------------------------------------------------
-# salir
-# -----------------------------------------------------------------------------
-# Finaliza la ejecución restaurando la terminal.
+# salir: Finaliza la ejecución restaurando la terminal.
 # -----------------------------------------------------------------------------
 salir() {
     cleanup
@@ -59,10 +54,8 @@ salir() {
 trap salir EXIT INT TERM
 
 # -----------------------------------------------------------------------------
-# validar_dialog
-# -----------------------------------------------------------------------------
-# Verifica que 'dialog' esté disponible.
-# Intenta instalarlo usando el gestor de paquetes detectado.
+# validar_dialog: Verifica que 'dialog' esté disponible. En caso contrario,
+# intenta instalarlo usando el gestor de paquetes detectado.
 #
 # Exit:
 #   1 si no puede determinar el gestor de paquetes
@@ -89,13 +82,9 @@ validar_dialog() {
 }
 
 # -----------------------------------------------------------------------------
-# get_size_mb <directorio>
-# -----------------------------------------------------------------------------
-# Calcula el tamaño de un directorio en MB.
-#
+# get_size_mb <directorio>: Calcula el tamaño de un directorio en MB.
 # Parámetros:
 #   $1 → ruta del directorio
-#
 # Output:
 #   Imprime tamaño en MB (entero)
 # -----------------------------------------------------------------------------
@@ -104,9 +93,7 @@ get_size_mb() {
 }
 
 # -----------------------------------------------------------------------------
-# calc_height <cantidad_items>
-# -----------------------------------------------------------------------------
-# Calcula altura dinámica para ventanas dialog.
+# calc_height <cantidad_items>: Calcula altura dinámica para ventanas dialog.
 # -----------------------------------------------------------------------------
 calc_height() {
     local items=$1
@@ -120,9 +107,7 @@ calc_height() {
 }
 
 # -----------------------------------------------------------------------------
-# shorten_path <ruta> <longitud_maxima>
-# -----------------------------------------------------------------------------
-# Trunca rutas largas conservando inicio y final.
+# shorten_path <ruta> <longitud_maxima>: Trunca rutas largas conservando inicio y final.
 # -----------------------------------------------------------------------------
 shorten_path() {
     local path="$1"
@@ -139,10 +124,7 @@ shorten_path() {
 }
 
 # -----------------------------------------------------------------------------
-# confirmar_borrado <dir1> <dir2> ...
-# -----------------------------------------------------------------------------
-# Solicita confirmación mostrando el espacio total a liberar.
-#
+# confirmar_borrado: Solicita confirmación mostrando el espacio total a liberar.
 # Return:
 #   0 si confirma
 #   1 si cancela
@@ -166,9 +148,7 @@ confirmar_borrado() {
 }
 
 # -----------------------------------------------------------------------------
-# mostrar_carpetas
-# -----------------------------------------------------------------------------
-# Muestra listado de carpetas encontradas y tamaño total combinado.
+# mostrar_carpetas: Muestra listado de carpetas encontradas y tamaño total combinado.
 # -----------------------------------------------------------------------------
 mostrar_carpetas() {
     local DIR_LIST=""
@@ -190,9 +170,7 @@ mostrar_carpetas() {
 }
 
 # -----------------------------------------------------------------------------
-# borrar_todas
-# -----------------------------------------------------------------------------
-# Elimina todas las carpetas detectadas.
+# borrar_todas: Elimina todas las carpetas detectadas.
 # Respeta modo DRY_RUN.
 # -----------------------------------------------------------------------------
 borrar_todas() {
@@ -223,9 +201,7 @@ borrar_todas() {
 }
 
 # -----------------------------------------------------------------------------
-# borrar_checklist
-# -----------------------------------------------------------------------------
-# Permite seleccionar múltiples carpetas para eliminación.
+# borrar_checklist: Permite seleccionar múltiples carpetas para eliminación.
 # -----------------------------------------------------------------------------
 borrar_checklist() {
     local CHECKLIST_ARGS=()
