@@ -86,7 +86,7 @@ Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula 
 
 ------------------------------------------------------------------------
 
-# 🤝 Contribuciones
+### ***🤝 Contribuciones***
 
 Se agradecen las contribuciones.
 
