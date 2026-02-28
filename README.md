@@ -58,6 +58,12 @@ El archivo implementa un prompt dinámico optimizado con cacheo inteligente, ori
 - cache global
 - Busqueda de `package.json`
 - Detección inteligente del `package manager`
+- Detección inteligente de `git status`
+
+      🟢 → repo limpio
+      🟡 → cambios sin commit
+      🔴 → conflictos
+      🔵 → detached HEAD
 - Prompt contextual con heurística de proyecto
 
 </br>
@@ -67,18 +73,18 @@ El archivo implementa un prompt dinámico optimizado con cacheo inteligente, ori
 
 <div align="center">
 
-| Característica             | Ubuntu default| Tu versión |
-|----------------------------|---------------|------------|
-| Prompt estático            | ✅             | ❌         |
-| Rama Git                   | ❌            | ✅          |
-| Detectar Node project      | ❌            | ✅          |
-| Detectar package manager   | ❌            | ✅          |
-| Cache de estado            | ❌            | ✅          |
-| Optimización por PWD       | ❌            | ✅          |
-| Parsing JSON               | ❌            | ✅          |
+| Característica             |Ubuntu default|Versión 3.0|
+|----------------------------|--------------|-----------|
+| Prompt dinámico            | ❌           | ✔️        |
+| Rama Git                   | ❌           | ✔️        |
+| Detectar Node project      | ❌           | ✔️        |
+| Detectar package manager   | ❌           | ✔️        |
+| Cache de estado            | ❌           | ✔️        |
+| Optimización por PWD       | ❌           | ✔️        |
+| Parsing JSON               | ❌           | ✔️        |
 
 
-#### ⚠️ Está más cerca de un mini framework de prompt que de un .bashrc común.
+#### Está más cerca de un mini framework de prompt que de un `.bashrc` común‼️
 </div>
 ------------------------------------------------------------------------
 
