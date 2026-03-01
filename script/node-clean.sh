@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # ╔════════════════════════════════════════════════════╗
 # │ node-clean – Limpieza de proyectos Node.js         │
-# │ Versión: 3.5                                       │
+# │ Versión: 3.0                                       │
 # │ Autor: Daniel Calderon - Kapelu                    │
 # │ WebSite: https://danielcalderon.vercel.app/        │
 # │ Github: https://github.com/Kapelu                  │
-# │ Fecha: 16/10/2023                                  │
+# │ Fecha: 16/10/2025                                  │
 # ╚════════════════════════════════════════════════════╝
 
 set -euo pipefail

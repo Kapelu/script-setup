@@ -55,7 +55,8 @@ El archivo implementa un prompt dinámico optimizado con cacheo inteligente, ori
 
 ### <u>Características:</u>
 
-- cache global
+- Crea una carpeta llamada script donde se instalaran los script personalizables y ejecutables
+- Cache global
 - Busqueda de `package.json`
 - Detección inteligente del `package manager`
 - Detección inteligente de `git status`
