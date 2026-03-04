@@ -10,7 +10,7 @@ clear
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-VERSION=" 2.0.0"
+VERSION=" 1.0.0"
 DATE=$(date "+%d-%m-%Y")
 USER_NAME=$(whoami)
 HOSTNAME=$(hostname)
@@ -120,7 +120,7 @@ cmd_release() {
     require_git_repo
 
     local part=${1:-}
-    [[ -z "$part" ]] && error "Uso: gh release <major|minor|patch>"
+    [[ -z "$part" ]] && error "Uso: github release <major|minor|patch>"
 
     local latest
     latest=$(get_latest_tag)
