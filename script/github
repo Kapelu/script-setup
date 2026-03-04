@@ -81,7 +81,7 @@ cmd_commit() {
     git commit -m "${type}: ${message}"
     git push
 
-    success "Commit ${yellow}${type}: ${message}${reset}${green} & Push realizado realizado con éxito!!!${reset}"
+    success "${italic}${bold}$Commit ${yellow}${type}: ${message}${reset}${italic}${bold}$${green} & Push realizado realizado con éxito!!!${reset}"
 }
 
 get_latest_tag() {
