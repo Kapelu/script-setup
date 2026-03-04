@@ -98,7 +98,7 @@ cmd_date() {
     git commit -m "✔ Update ${DATE}"
     git push
 
-    success "Commit con fecha ${yellow}${DATE}${reset}${italic}${bold}${green} realizado.${reset}"
+    success "Commit con fecha ${yellow}${DATE}${reset}${italic}${bold}${green} realizado con éxito!!!${reset}"
 }
 
 # comando para mostrar ayuda
