@@ -184,6 +184,7 @@ EOF
 # ─────────────────────────────
 header
 
+
 case "${1:-help}" in
     commit)  shift; cmd_commit "$@" ;;
     date)    cmd_date ;;
