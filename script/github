@@ -126,7 +126,7 @@ cmd_release() {
     latest=$(get_latest_tag)
 
     if [[ -z "$latest" ]]; then
-        latest="v0.0.0"
+        latest="0.0.0"
     fi
 
     local new_version
