@@ -7,27 +7,33 @@
 # │ Github: https://github.com/Kapelu                  │
 # │ Fecha: 16/02/2026                                  │
 # ╚════════════════════════════════════════════════════╝
+
 # Variables para cachear info de PWD, gestor y git branch
 # =============================================================================
 __LAST_PWD=""
 __PKG_MANAGER=""
 __GIT_BRANCH=""
 # Definir carpeta única
+#-----------------------------------------
 SCRIPT_DIR="$HOME/script"
 
 # Crear si no existe
+#-----------------------------------------
 [ -d "$SCRIPT_DIR" ] || mkdir -p "$SCRIPT_DIR"
 
 # Añadir al PATH solo si no está ya
+#-----------------------------------------
 case ":$PATH:" in
   *":$SCRIPT_DIR:"*) ;;
   *) export PATH="$PATH:$SCRIPT_DIR" ;;
 esac
 
 # Hacer ejecutables los existentes en script
+#-----------------------------------------
 find "$SCRIPT_DIR" -type f -exec chmod +x {} \;
 
 # Vigilar nuevos archivos para hacerlos ejecutables automáticamente
+# =============================================================================
 if command -v inotifywait >/dev/null 2>&1 && [ -z "$__SCRIPTS_WATCH_STARTED" ]; then
   export __SCRIPTS_WATCH_STARTED=1
   inotifywait -m -e create --format '%f' "$SCRIPT_DIR" 2>/dev/null |
@@ -92,16 +98,20 @@ git_prompt_status() {
   branch=$(git symbolic-ref --short HEAD 2>/dev/null)
 
   # 🔵 Detached HEAD
+	#-----------------------------------------
   [ -z "$branch" ] && branch=$(git rev-parse --short HEAD 2>/dev/null) && \
     { printf "\033[38;5;39m[%s]\033[0m" "$branch"; return; }
 
   # 🔴 Conflictos
+	#-----------------------------------------
   git ls-files -u | grep -q . && { printf "\033[38;5;196m[%s]\033[0m" "$branch"; return; }
 
   # 🟡 Cambios sin commit
+	#-----------------------------------------
   (! git diff --quiet || ! git diff --cached --quiet) && { printf "\033[38;5;220m[%s]\033[0m" "$branch"; return; }
 
   # 🟢 Repo limpio
+	#-----------------------------------------
   printf "\033[38;5;82m[%s]\033[0m" "$branch"
 }
 
