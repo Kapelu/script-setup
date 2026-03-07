@@ -1,0 +1,24 @@
+{
+  "name": "script-setup",
+  "version": "3.0.0",
+  "description": "<div align=\"center\"> <h1 style='margin: 0 0 2rem; font-size: 2.5rem;'>script-setup</h1 > </div> <div align=\"center\">",
+  "main": "index.js",
+  "directories": {
+    "doc": "doc"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kapelu/script-setup.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Kapelu/script-setup/issues"
+  },
+  "homepage": "https://github.com/Kapelu/script-setup#readme"
+}
