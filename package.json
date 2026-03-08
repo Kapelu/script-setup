@@ -1,13 +1,9 @@
 {
-  "name": "script-setup",
+  "name": "setup-kape",
   "version": "3.0.0",
   "description": "Script post instala de ubuntu",
-  "main": "index.js",
   "bin": {
-    "mi-script": "./script.sh"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "setup-kape": "cli.js"
   },
   "repository": {
     "type": "git",
