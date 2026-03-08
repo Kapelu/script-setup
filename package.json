@@ -1,6 +1,6 @@
 {
-  "name": "kapelu",
-  "version": "3.5.0",
+  "name": "@daniel-calderon/kapelu",
+  "version": "3.5.1",
   "description": "Script post-install de Ubuntu",
   "type": "commonjs",
   "bin": {

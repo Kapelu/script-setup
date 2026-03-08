@@ -1,8 +1,0 @@
-[Desktop Entry]
-Name=Apagar
-Comment=Apaga la computadora con barra visual de 15 segundos
-Exec=gnome-terminal --geometry=45x8 --hide-menubar -- bash -c "/home/daniel-calderon/script/btn-shd.sh"
-Icon=system-shutdown
-Terminal=false
-Type=Application
-Categories=System;
