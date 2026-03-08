@@ -16,15 +16,6 @@ HOSTNAME=$(hostname)
 FECHA=$(date "+%d-%m-%Y")
 HORA=$(date "+%H:%M:%S")
 
-URL_LOG="https://raw.githubusercontent.com/Kapelu/script-setup/main/config/btn-log"
-DEST_LOG="$HOME/Desktop/btn-log"
-
-URL_SHD="https://raw.githubusercontent.com/Kapelu/script-setup/main/config/btn-shd"
-DEST_SHD="$HOME/Desktop/btn-shd"
-
-URL_SUS="https://raw.githubusercontent.com/Kapelu/script-setup/main/config/btn-sus"
-DEST_SUS="$HOME/Desktop/btn-sus"
-
 APT_BASE=( wget gpg apt-transport-https chrome-gnome-shell gnome-browser-connector font-manager net-tools )
 
 APT_DEV_TOOLS=( lsd neofetch dialog git curl build-essential usb-creator-gtk gparted )
@@ -86,18 +77,6 @@ print_banner() {
   echo -e "${COLOR[green]}════════════════════════════════════════════════════${COLOR[reset]}"
 }
 sleep 3
-
-install_btn(){
-	# Boton cerrar sesión
-	curl -L "$URL_LOG" -o "$DEST_LOG"
-  chmod +x "$DEST_LOG"
-	# Boton suspenderPC
-	curl -L "$URL_SHD" -o "$DEST_SHD"
-  chmod +x "$DEST_SHD"
-	# Boton apagar PC
-	curl -L "$URL_SUS" -o "$DEST_SUS"
-  chmod +x "$DEST_SUS"
-}
 
 command_exists() { command -v "$1" >/dev/null 2>&1; }
 
