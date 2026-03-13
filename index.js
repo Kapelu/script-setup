@@ -2,6 +2,7 @@
 
 const { execSync } = require("child_process");
 const pkg = require("./package.json");
+const { clear } = require("console");
 
 function exists(cmd) {
   try {
@@ -67,11 +68,11 @@ try {
   console.log("🚀 Ejecutando install.sh\n");
   execSync(`bash ${__dirname}/install.sh`, { stdio: "inherit" });
 } catch (err) {
-  console.error("\n❌ Error ejecutando Post-Install:", err.message);
+  clear
+  console.log("");
+  console.error("          \n❌ Error ejecutando Post-Install:", err.message);
+  console.log("");
+  console.log("");
+
   process.exit(1);
 }
-
-
-
-//const { execSync } = require("child_process");
-//execSync("bash install.sh", { stdio: "inherit" });

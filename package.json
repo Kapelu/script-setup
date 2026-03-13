@@ -1,75 +1,32 @@
 {
-  
   "name": "setup-kapelu",
-  
   "version": "3.0.2",
-  
   "description": "Script post-install de Ubuntu",
-  
   "type": "commonjs",
-  
   "bin": {
-  
-    
-  "kapelu": "index.js"
-  
+    "kapelu": "index.js"
   },
-  
   "repository": {
-  
-    
-  "type": "git",
-  
-    
-  "url": "git+https://github.com/Kapelu/kape-setup.git"
-  
+    "type": "git",
+    "url": "git+https://github.com/Kapelu/kape-setup.git"
   },
-  
   "keywords": [
-  
-    
-  "ubuntu",
-  
-    
-  "setup",
-  
-    
-  "post-install",
-  
-    
-  "cli",
-  
-    
-  "script"
-  
+    "ubuntu",
+    "setup",
+    "post-install",
+    "cli",
+    "script"
   ],
-  
   "author": "Daniel Calderon",
-  
   "license": "ISC",
-  
   "bugs": {
-  
-    
-  "url": "https://github.com/Kapelu/kape-setup/issues"
-  
+    "url": "https://github.com/Kapelu/kape-setup/issues"
   },
-  
   "homepage": "https://github.com/Kapelu/kape-setup#readme",
-  
   "files": [
-  
-    
-  "cli.js",
-  
-    
-  "install.sh",
-  
-    
-  "script/",
-  
-    
-  "config/"
-  
+    "cli.js",
+    "install.sh",
+    "script/",
+    "config/"
   ]
 }
