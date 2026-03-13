@@ -153,6 +153,7 @@ system_update() {
 	sudo apt update -y
 	sudo apt upgrade -y
 	sudo apt full-upgrade -y
+
 }
 
 ########################################
@@ -441,8 +442,7 @@ install_snap_tools &
 
 wait
 
-#setup_ssh
-
+setup_ssh
 system_cleanup
 
 ELAPSED=$(( SECONDS - START ))
