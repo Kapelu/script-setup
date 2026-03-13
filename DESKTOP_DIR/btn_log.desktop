@@ -1,8 +1,0 @@
-[Desktop Entry]
-Name=Logout
-Comment=Cierra sesión con barra visual de 15 segundos
-Exec=gnome-terminal --geometry=45x8 --hide-menubar -- bash -c "/home/daniel-calderon/script/btn-log.sh"
-Icon=system-log-out
-Terminal=false
-Type=Application
-Categories=Utility;
