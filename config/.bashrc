@@ -146,3 +146,30 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 # shellcheck source=/dev/null
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+# ────────────── NVM y Node ──────────────
+export NVM_DIR="$HOME/.nvm"
+
+# Cargar NVM si existe
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+    \. "$NVM_DIR/nvm.sh"
+fi
+
+# Instalar NVM si no está presente
+if [ ! -d "$NVM_DIR" ]; then
+    echo "📦 Instalando NVM..."
+    curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+    \. "$NVM_DIR/nvm.sh"
+fi
+
+# Instalar Node LTS si no está instalado
+if ! command -v node >/dev/null 2>&1; then
+    echo "📦 Instalando Node.js LTS..."
+    nvm install --lts
+    nvm use --lts
+fi
+
+# Verificar versiones
+command -v node >/dev/null && node -v
+command -v npm >/dev/null && npm -v
+# ────────────────────────────────────────
