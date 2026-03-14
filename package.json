@@ -33,5 +33,8 @@
   "bugs": {
     "url": "https://github.com/Kapelu/kape-setup/issues"
   },
-  "homepage": "https://github.com/Kapelu/kape-setup#readme"
+  "homepage": "https://github.com/Kapelu/kape-setup#readme",
+  "engines": {
+    "node": ">=18"
+  }
 }

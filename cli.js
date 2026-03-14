@@ -1,10 +1,14 @@
 #!/usr/bin/env node
 
 const { execSync } = require("child_process");
+const { existsSync } = require("fs");
 const pkg = require("./package.json");
-const { clear } = require("console");
 
-function exists(cmd) {
+function run(cmd, options = {}) {
+  execSync(cmd, { stdio: "inherit", shell: "/bin/bash", ...options });
+}
+
+function commandExists(cmd) {
   try {
     execSync(`command -v ${cmd}`, { stdio: "ignore" });
     return true;
@@ -13,78 +17,50 @@ function exists(cmd) {
   }
 }
 
-function installNode() {
-  console.log("📦 Instalando Node.js y npm...\n");
-  execSync("sudo apt update", { stdio: "inherit" });
-  execSync("sudo apt install -y nodejs npm", { stdio: "inherit" });
-}
-
-function latestVersion() {
-  try {
-    return execSync(`npm view ${pkg.name} version`, {
-      stdio: ["ignore", "pipe", "ignore"],
-    })
-      .toString()
-      .trim();
-  } catch {
-    return null;
+function ensureNode() {
+  if (!commandExists("node") || !commandExists("npm")) {
+    console.log("📦 Node.js y npm no detectados. Instalando...");
+    run(
+      "curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash",
+    );
+    run(
+      'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"',
+    );
+    run("nvm install --lts && nvm use --lts");
+    run("npm install -g pnpm yarn");
+  } else {
+    console.log("✔ Node.js y npm OK");
   }
 }
 
-function updateIfNeeded() {
-  const current = pkg.version;
-  const latest = latestVersion();
-  if (!latest) return;
-
-  if (current !== latest) {
-    console.log(`⬆ Nueva versión disponible ${latest} (actual ${current})`);
-    console.log("Actualizando kapelu...\n");
-    execSync(`npm install -g ${pkg.name}`, { stdio: "inherit" });
+function updateKapelu() {
+  const latest = execSync(`npm view ${pkg.name} version`, {
+    stdio: ["ignore", "pipe", "ignore"],
+  })
+    .toString()
+    .trim();
+  if (pkg.version !== latest) {
+    console.log(`⬆ Nueva versión disponible: ${latest}. Actualizando...`);
+    run(`npm install -g ${pkg.name}`);
     process.exit(0);
   }
 }
 
-function autoUpdateGitHub() {
-  // Si el script existe, hacer pull del repo para tener versión más reciente
-  try {
-    execSync(
-      `if [ -d "/tmp/script-setup" ]; then cd /tmp/script-setup && git pull --rebase; fi`,
-      { stdio: "inherit", shell: "/bin/bash" },
-    );
-  } catch {}
-}
-
 try {
-  console.log("🔎 Verificando Node.js y npm...");
-  if (!exists("node") || !exists("npm")) installNode();
-  console.log("✔ Node.js y npm OK\n");
+  console.log("🔎 Verificando Node/npm...");
+  ensureNode();
 
-  console.log("🔎 Verificando actualizaciones en npm...");
-  updateIfNeeded();
+  console.log("🔎 Verificando actualizaciones...");
+  updateKapelu();
 
-  console.log("🔎 Actualizando desde GitHub si existe repo local...");
-  autoUpdateGitHub();
-
-  console.log("🚀 Ejecutando install.sh\n");
-  execSync(`bash ${__dirname}/install.sh`, { stdio: "inherit" });
+  console.log("🚀 Ejecutando instalador completo...");
+  run(`bash ${__dirname}/install.sh`);
 } catch (err) {
   console.clear();
-
-  console.error("\n❌ Error ejecutando Post-Install\n");
-
-  if (err.status) {
-    console.error("Código de salida:", err.status);
-  }
-
-  if (err.cmd) {
-    console.error("Comando:", err.cmd);
-  }
-
-  if (err.stderr) {
-    console.error(err.stderr.toString());
-  }
-
+  console.error("\n❌ Error ejecutando setup-kapelu\n");
+  if (err.status) console.error("Código de salida:", err.status);
+  if (err.cmd) console.error("Comando:", err.cmd);
+  if (err.stderr) console.error(err.stderr.toString());
   console.error(err.message);
-
   process.exit(1);
 }
