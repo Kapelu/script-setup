@@ -15,10 +15,9 @@ HOME_DIR=$HOME
 DESKTOP_DIR=$(xdg-user-dir DESKTOP)
 TMP_DIR="/tmp/kape-setup-$RANDOM"
 REPO="https://github.com/Kapelu/kape-setup.git"
-LOG_FILE="$HOME_DIR/setup-kape.log"
 green='\e[32m'
 reset='\e[0m'
-LOG="$HOME/post-install.log"
+LOG="$HOME/setup-kapelu.log"
 
 log() {
     echo -e "\033[0;32m✅ $1\033[0m"
