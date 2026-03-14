@@ -1,6 +1,6 @@
 {
   "name": "setup-kapelu",
-  "version": "3.2.9",
+  "version": "3.2.10",
   "description": "Script post-install de Ubuntu",
   "type": "commonjs",
   "bin": {
