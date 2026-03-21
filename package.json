@@ -1,0 +1,40 @@
+{
+  "name": "setup-kapelu",
+  "version": "3.2.12",
+  "description": "Script post-install de Ubuntu",
+  "type": "commonjs",
+  "bin": {
+    "kapelu": "cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kapelu/kape-setup.git"
+  },
+  "files": [
+    "cli.js",
+    "install.sh",
+    "script/",
+    "config/"
+  ],
+  "keywords": [
+    "ubuntu",
+    "setup",
+    "post-install",
+    "vscode",
+    "node",
+    "sublime-text",
+    "script",
+    "script-install",
+    "snap",
+    "tool"
+  ],
+  "author": "Daniel Calderon",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Kapelu/kape-setup/issues"
+  },
+  "homepage": "https://github.com/Kapelu/kape-setup#readme",
+  "engines": {
+    "node": ">=18"
+  }
+}
