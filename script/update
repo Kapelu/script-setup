@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# ╔════════════════════════════════════════════════════╗
+# │ Autor: Daniel Calderon - Kapelu                    │
+# │ Fecha: XX/XX/XXXX                                  │
+# │ WebSite: https://danielcalderon.vercel.app/        │
+# │ Github: https://github.com/Kapelu                  │
+# ╚════════════════════════════════════════════════════╝
+set -Eeuo pipefail
+IFS=$'\n\t'
+clear
+
+source "$BASE_DIR/script/log"
+
+update() {
+  log " 🔧 Actualizando sistema..."
+
+  wait_for_apt_lock
+
+  retry sudo apt-get update
+  retry sudo apt-get full-upgrade -y
+  retry sudo apt-get autoremove -y
+  retry sudo apt-get autoclean -y
+  sudo apt-get clean
+
+  log "Sistema actualizado"
+}

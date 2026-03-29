@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ╔════════════════════════════════════════════════════╗
-# │ Install – Instalador Post-Install de Ubuntu        │
+# │ OS_Info – Brinda información del sistema.          │
 # │ Versión: 4.0                                       │
 # │ Autor: Daniel Calderon - Kapelu                    │
 # │ Fecha: 19-02-2026                                  │
@@ -19,7 +19,7 @@ C_RESET="\e[0m"
 C_TITLE="\e[1;32m"   # Green
 C_LABEL="\e[1;33m"  # Yellow
 C_STITLE="\e[1;34m"   # Cyan
-C_DATA="\e[1;90m"
+C_DATA="\e[1;90m"  
 
 TMP_DIR="$(mktemp -d)"
 
@@ -118,7 +118,6 @@ render() {
   echo -e "     ${C_TITLE}$(get user)@$(get host)${C_RESET}"
   echo "     ----------------------"
   echo ""
-
   echo -e "     ${C_STITLE}Información del hardware${C_RESET}"
 	echo -e "     ${C_LABEL}OS:${C_DATA} $(get os_name) $(get os_type)"
   echo -e "     ${C_LABEL}Version:${C_DATA} $(get os_version)"
@@ -128,7 +127,6 @@ render() {
   echo -e "     ${C_LABEL}Session:${C_DATA} $(get session)"
   echo -e "     ${C_LABEL}Shell:${C_DATA} $(get shell) $(get shell_version)"
   echo -e "     ${C_LABEL}Packages:${C_DATA} $(get pkg) (dpkg), $(get snap) (snap)"
-
   echo ""
   echo -e "     ${C_STITLE}Información del software${C_RESET}"
   echo -e "     ${C_LABEL}Modelo:${C_DATA} $(get hw_model)"
@@ -139,7 +137,7 @@ render() {
   echo -e "     ${C_LABEL}Disk:${C_DATA} $(get disk)"
   echo ""
   echo -e "     ${C_TITLE}📅 $(datetime)${C_RESET}"
-  echo ""
+  echo -e "     ${C_TITLE}⚠️  Info guardada en $HOME/OS_Info.md${C_RESET}"
 }
 
 main() {
@@ -181,6 +179,12 @@ main() {
   echo ""
 
 } > "$HOME/OS_Info.md"
+
+echo ""
+read -n 1 -s -r -p " Presioná cualquier tecla para continuar..."
+echo ""
+clear
+rm -rf "$TMP_DIR"
 
   rm -rf "$TMP_DIR"
 }

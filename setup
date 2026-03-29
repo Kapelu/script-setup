@@ -15,25 +15,37 @@ clear
 # ------------------------------------------
 LOG_FILE="$HOME/setup.log"
 VERSION="3.0"
+BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 USUARIO=$(whoami)
 HOSTNAME=$(hostname)
 FECHA=$(date "+%d-%m-%Y")
 HORA=$(date "+%H:%M:%S")
-APT_BASE=( wget gpg apt-transport-https chrome-gnome-shell gnome-browser-connector font-manager net-tools )
-APT_DEV_TOOLS=( lsd dialog build-essential )
-SNAP_DEV_TOOLS=( jdownloader2 vlc )
+declare -A COLOR=(
+  [reset]=$'\e[0m'
+  [bold]=$'\e[1m'
+  [italic]=$'\e[3m'
 
-# Cargar utils
-source "$BASE_DIR/ui/banner"
-source "$BASE_DIR/ui/colors"
-source "$BASE_DIR/ui/log"
-source "$BASE_DIR/ui/logo"
+  [info]=$'\e[36m'
+  [ok]=$'\e[32m'
+  [warn]=$'\e[33m'
+  [error]=$'\e[31m'
+
+  [yellow]=$'\e[0;33m'
+  [red]=$'\e[1;31m'
+  [green]=$'\e[0;32m'
+  [blue]=$'\e[34m'
+  [magenta]=$'\e[35m'
+  [gray]=$'\e[90m'
+)
 
 # Cargar scripts
-source "$BASE_DIR/script/helpers.sh"
-source "$BASE_DIR/script/package.sh"
-source "$BASE_DIR/script/system.sh"
-source "$BASE_DIR/script/banner.sh"
+source "$BASE_DIR/script/ui"
+source "$BASE_DIR/script/log"
+source "$BASE_DIR/script/update"
+source "$BASE_DIR/script/helper"
+source "$BASE_DIR/script/os_info"
+
+
 source "$BASE_DIR/script/config.sh"
 source "$BASE_DIR/script/node.sh"
 source "$BASE_DIR/script/vscode.sh"
@@ -69,12 +81,13 @@ main() {
   print_banner " 🚀 Iniciando Secuencia Post-Install..."
 	echo ""
 
+  update
+	install_apt
+	install_snap
 
-  system_update
 
   config
 
-  install_node
   install_vscode
   remove_firefox
   install_brave
@@ -82,7 +95,7 @@ main() {
   install_protonvpn
   install_sublime
 
-  system_cleanup
+  cleanup
 	clear
 	os_info
 

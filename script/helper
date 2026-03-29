@@ -1,26 +1,24 @@
 #!/usr/bin/env bash
 # ╔════════════════════════════════════════════════════╗
-# │ Logging Helper para kpsetup de Ubuntu              │
-# │ Versión: 4.0                                       │
 # │ Autor: Daniel Calderon - Kapelu                    │
-# │ Fecha: 19-02-2026                                  │
+# │ Fecha: XX/XX/XXXX                                  │
 # │ WebSite: https://danielcalderon.vercel.app/        │
 # │ Github: https://github.com/Kapelu                  │
 # ╚════════════════════════════════════════════════════╝
-declare -A COLOR=(
-  [reset]=$'\e[0m'
-  [bold]=$'\e[1m'
-  [italic]=$'\e[3m'
+set -Eeuo pipefail
+IFS=$'\n\t'
+clear
 
-  [info]=$'\e[36m'
-  [ok]=$'\e[32m'
-  [warn]=$'\e[33m'
-  [error]=$'\e[31m'
+source "$BASE_DIR/script/install_apt"
+source "$BASE_DIR/script/install_snap"
 
-  [yellow]=$'\e[0;33m'
-  [red]=$'\e[1;31m'
-  [green]=$'\e[0;32m'
-  [blue]=$'\e[34m'
-  [magenta]=$'\e[35m'
-  [gray]=$'\e[90m'
-)
+install_snap() {
+  log_info "📦 Instalando herramientas snap..."
+  install_snap "${SNAP_TOOLS[@]}"
+}
+
+install_apt(){
+	log_info "📦 Instalando paquetes apt..."
+  install_apt "${APT_TOOLS[@]}"
+}
+

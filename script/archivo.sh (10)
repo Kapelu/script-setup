@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# ╔════════════════════════════════════════════════════╗
+# │ Nombre – Descripción                               │
+# │ Versión: X.X                                       │
+# │ Autor: Daniel Calderon - Kapelu                    │
+# │ Fecha: XX/XX/XXXX                                  │
+# │ WebSite: https://danielcalderon.vercel.app/        │
+# │ Github: https://github.com/Kapelu                  │
+# ╚════════════════════════════════════════════════════╝
+set -Eeuo pipefail
+IFS=$'\n\t'
+clear
+
+
+# Opcional a estudiar
+TMP_DIR="$(mktemp -d)"
+
+git clone https://github.com/Kapelu/kpsetup.git "$TMP_DIR"
+cd "$TMP_DIR"
+
+bash setup

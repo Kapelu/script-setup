@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# ╔════════════════════════════════════════════════════╗
+# │ Nombre – Descripción                               │
+# │ Versión: X.X                                       │
+# │ Autor: Daniel Calderon - Kapelu                    │
+# │ Fecha: XX/XX/XXXX                                  │
+# │ WebSite: https://danielcalderon.vercel.app/        │
+# │ Github: https://github.com/Kapelu                  │
+# ╚════════════════════════════════════════════════════╝
+set -Eeuo pipefail
+IFS=$'\n\t'
+clear
+
+#!/usr/bin/env bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+
+REPO_URL="https://github.com/Kapelu/kpsetup.git"
+BRANCH="main"
+TMP_DIR=""
+
+cleanup() {
+  [[ -n "${TMP_DIR:-}" && -d "$TMP_DIR" ]] && rm -rf "$TMP_DIR"
+}
+trap cleanup EXIT
+
+error() {
+  echo "[ERROR] $1" >&2
+  exit 1
+}
+
+info() {
+  echo "[INFO] $1"
+}
+
+check_dependencies() {
+  command -v git >/dev/null || error "git no está instalado"
+  command -v bash >/dev/null || error "bash no disponible"
+}
+
+clone_repo() {
+  TMP_DIR="$(mktemp -d)"
+  info "Clonando repositorio en $TMP_DIR"
+  git clone --depth=1 --branch "$BRANCH" "$REPO_URL" "$TMP_DIR" \
+    || error "Fallo al clonar el repositorio"
+}
+
+validate_repo() {
+  [[ -f "$TMP_DIR/setup" ]] || error "No existe el script setup"
+  [[ -d "$TMP_DIR/script" ]] || error "Estructura inválida (falta /script)"
+}
+
+run_setup() {
+  cd "$TMP_DIR"
+  chmod +x setup
+  info "Ejecutando instalador..."
+  ./setup
+}
+
+main() {
+  check_dependencies
+  clone_repo
+  validate_repo
+  run_setup
+}
+
+main "$@"

@@ -27,13 +27,13 @@
 # │ ❌ Se detectaron errores menores                   │
 # ╚════════════════════════════════════════════════════╝
 # Iconos
-ICON_INFO="🟩"
-ICON_OK="✅"
-ICON_WARN="⚠️"
-ICON_ERROR="❌"
-ICON_RUN="⚙️"
-ICON_VERIFY="✔️"
-ICON_VERIFAIL="⛔"
+ICON_INFO="🟢​ "
+ICON_OK="✅ "
+ICON_WARN="⚠️ "
+ICON_ERROR="❌ "
+ICON_RUN="⚙️ "
+ICON_VERIFY="✔️ "
+ICON_VERIFAIL="⛔ "
 
 # Log file 
 LOG_FILE="${LOG_FILE:-}" 
