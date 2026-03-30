@@ -51,12 +51,11 @@ cleanup() {
 
 update() {
   log_info " 🔧 Actualizando sistema..."
-
+	sudo apt-get remove imagemagick -y &&
   sudo apt-get update &&
   sudo apt-get full-upgrade -y &&
   sudo apt-get autoremove -y &&
   sudo apt-get autoclean -y &&
   sudo apt-get clean
-
   log_ok "Sistema actualizado"
 }
