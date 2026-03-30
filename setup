@@ -100,9 +100,8 @@ main() {
 	clear
 	os_info
   cleanup
-
-
-  ELAPSED=$(( SECONDS - START ))
+	
+	ELAPSED=$(( SECONDS - START ))
   HORAS=$((ELAPSED / 3600))
   MINUTOS=$(( (ELAPSED % 3600) / 60 ))
   SEGUNDOS=$((ELAPSED % 60))
