@@ -1,0 +1,414 @@
+#!/usr/bin/env bash
+# ╔════════════════════════════════════════════════════╗
+# │ Install – Instalador Post-Install de Ubuntu        │
+# │ Versión: 4.0                                       │
+# │ Autor: Daniel Calderon - Kapelu                    │
+# │ Fecha: 19-02-2026                                  │
+# │ WebSite: https://danielcalderon.vercel.app/        │
+# │ Github: https://github.com/Kapelu                  │
+# ╚════════════════════════════════════════════════════╝
+#// Permisos sudo activos
+if [[ $EUID -ne 0 ]]; then
+	clear
+	sleep 3 &
+  printf "%s\n"
+  printf "%b%-40s%b\n" "\e[3;32m[+] Elevando privilegios sudo...\e[0m\e[3;90m"
+  exec sudo -E bash "$0" "$@"
+  printf "%s\n" "\e[0m"
+fi
+
+set -Eeuo pipefail
+IFS=$'\n\t'
+
+#//                              VARIABLES
+#//                              ¯¯¯¯¯¯¯¯¯
+USUARIO=$(whoami)
+HOSTNAME=$(hostname)
+LOG_FILE="$HOME/setup.log"
+START_INITIAL="$(date +"%H:%M:%S")"
+APT_TOOLS=( 
+	pciutils
+  wget
+	ca-certificates
+  gpg 
+  apt-transport-https 
+  chrome-gnome-shell 
+  gnome-browser-connector 
+  font-manager 
+  net-tools
+  lsd
+  dialog
+  build-essential
+  )
+declare -gA COLOR=(
+  [reset]=$'\e[0m'      # Reset / color normal
+  [bold]=$'\e[1m'       # Negrita
+  [italic]=$'\e[3m'     # Cursiva (no siempre soportado)
+
+  [error]=$'\e[31m'     # Rojo
+  [ok]=$'\e[32m'        # Verde
+  [warn]=$'\e[33m'      # Amarillo
+  [info]=$'\e[34m'      # Azul
+
+  [black]=$'\e[30m'     # Negro
+  [red]=$'\e[31m'       # Rojo
+  [green]=$'\e[32m'     # Verde
+  [yellow]=$'\e[33m'    # Amarillo brillante(reemplazar 3 x 9)
+  [blue]=$'\e[34m'      # Azul
+  [magenta]=$'\e[35m'   # Magenta / violeta
+	[cyan]=$'\e[36m'      # Cyan
+  [white]=$'\e[37m'     # Blanco
+  [gray]=$'\e[90m'      # fondo normal
+)
+# Iconos de .log
+ICON_INFO="🟢 "
+ICON_OK="✅ "
+ICON_WARN="⚠️ "
+ICON_ERROR="❌ "
+ICON_RUN="⚙️ "
+ICON_VERIFY="✔️ "
+ICON_VERIFAIL="⛔ "
+
+#//                              FUNCIONES UTILITARIAS
+#//                              ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+#* Crea $HOME/setup.log 
+file_log() {
+  exec 3>&1
+  exec 1>>"$LOG_FILE" 2>&1
+  clear >&3
+  HEADER="          ===== START -> kapelu $(date '+%Y-%m-%d %H:%M:%S') ====="
+  printf "%s\n" "$HEADER"        # 👉 va al log
+  printf "%s\n" "" >&3
+  printf "%s\n" "$HEADER" >&3    # 👉 se ve en pantalla
+}
+#* datetime: manejo de fecha y hora
+datetime() {
+  local fecha hora
+  fecha="$(date +"%d-%m-%Y")"
+  hora="$(date +"%H:%M:%S")"
+
+  case "${1:-full}" in            #    Uso 
+    date) printf "%s\n" "$fecha" ;;        # printf "%s\n" "$(datetime date)" 
+    time) printf "%s\n" "$hora" ;;         # printf "%s\n" "$(datetime time)"
+    *) printf "%s\n" "$fecha - $hora" ;;   # printf "%s\n" "$(datetime)"     
+  esac
+}
+#* elapsed_time: maneja el tiempo de instalación del script
+elapsed_time() {
+  local start="$1"
+  local elapsed=$((SECONDS - start))
+
+  local horas=$((elapsed / 3600))
+  local minutos=$(((elapsed % 3600) / 60))
+  local segundos=$((elapsed % 60))
+
+  printf "%dh:%dm:%ds" "$horas" "$minutos" "$segundos"
+}
+#* log_*: maneja los los en pantalla y archivo.log
+log_print() {
+  local type="$1"
+  local msg="$2"
+
+  local icon color text
+
+  case "$type" in
+    info)   icon="$ICON_INFO";     color="yellow" ;;
+    ok)     icon="$ICON_OK";       color="yellow" ;;
+    warn)   icon="$ICON_WARN";     color="yellow" ;;
+    error)  icon="$ICON_ERROR";    color="yellow" ;;
+    run)    icon="$ICON_RUN";      color="yellow" ;;
+    verify) icon="$ICON_VERIFAIL"; color="yellow";;
+    *)      icon="";               color="yellow" ;;
+  esac
+
+  text="$msg"
+  local timestamp
+  timestamp="$(datetime time)"
+
+  local console_line="[$timestamp] ${icon}${COLOR[$color]}${text}${COLOR[reset]}"
+  local log_line="[$timestamp] ${icon}${text}"
+
+  {
+    flock -x 200
+
+    # consola
+    printf "%b%-40s%b\n" "$console_line" >&3
+
+    # log
+    [[ -n "$LOG_FILE" ]] && printf "%s\n" "$log_line" >>"$LOG_FILE"
+
+  } 200>/tmp/kapelu.lock
+}
+
+#//                                CONFIGURACIONES UI
+#//                                ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+logo() {
+  {
+    printf "%b%-40s%b\n" "${COLOR[ok]}"
+    cat << "EOF"
+  ██   ██  ██████   ███████  ███████  ████████  ██    ██  ██████
+  ██  ██   ██   ██  ██       ██          ██     ██    ██  ██   ██
+  █████    ██████   ███████  █████       ██     ██    ██  ██████
+  ██  ██   ██            ██  ██          ██      ██  ██   ██
+  ██   ██  ██       ███████  ███████     ██       ████    ██
+EOF
+    printf "%b%-40s%b\n" "${COLOR[reset]}"
+  } >&3
+}
+print_banner() {
+  local msg="$1"
+  {
+    printf "%b%-40s%b\n" "	${COLOR[warn]}════════════════════════════════════════════════════${COLOR[reset]}"
+    printf "%b%-40s%b\n" "$msg"
+    printf "%b%-40s%b\n" "	${COLOR[warn]}════════════════════════════════════════════════════${COLOR[reset]}"
+    printf "\n"
+  } >&3
+}
+
+#//                                FUNCIONES CORE
+#//                                ¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+#* Valida si la distro es UBUNTU
+if [ -f /etc/os-release ]; then
+  . /etc/os-release
+else
+  clear >&3
+  print_banner " ⛔ No se pudo detectar la Distro‼️"
+  sleep 3
+	exit 1
+fi
+case "$ID" in
+  ubuntu|debian|linuxmint|pop|zorin|elementary|neon)
+    ;;
+  *)
+		clear >&3
+    print_banner " ⛔ Distro no soportada: $ID"
+    sleep 3
+    exit 1
+    ;;
+esac
+
+#* INSTALL_APT_TOOLS: Instala paquetes usando APT_TOOLS
+INSTALL_APT_TOOLS() {
+  local pkg
+  for pkg in "${APT_TOOLS[@]}"; do
+    if ! dpkg -s "$pkg" &>/dev/null; then
+      log_print run "Instalando paquete: $pkg..."
+      
+      if ! sudo apt-get install -y "$pkg"; then
+        log_print warn "Paquete defectuoso: $pkg. Intentando desinstalar..."
+        sudo apt-get remove -y "$pkg" 2>/dev/null
+      else
+        log_print ok "Instalado correctamente: $pkg"
+      fi
+    else
+      log_print info "Ya está instalado: $pkg"
+    fi
+  done
+}
+
+#* OS_INFO: Brinda información del sistema
+OS_INFO() {
+  mkdir -p "$HOME/temp/OS_Info"
+  TMP_DIR_OS_INFO="$(mktemp -d "$HOME/temp/OS_Info/temp.XXXXXX")"
+
+  cleanup_osinfo() { [[ -n "${TMP_DIR_OS_INFO:-}" && -d "$TMP_DIR_OS_INFO" ]] && rm -rf "$TMP_DIR_OS_INFO"; }
+  trap cleanup_osinfo EXIT
+
+  log_print run " Recopilando información del OS..."
+
+  {
+    source /etc/os-release
+    printf "%s\n" "$NAME|$VERSION|$VERSION_ID|$ID_LIKE" > "$TMP_DIR_OS_INFO/os"
+    log_print verify "OS info"
+  } &
+
+  {
+    CPU=$(grep "model name" /proc/cpuinfo | head -n1 | cut -d ':' -f2 | xargs)
+    CORES=$(nproc)
+    printf "%s\n" "$CPU|$CORES" > "$TMP_DIR_OS_INFO/cpu"
+    log_print verify "CPU info"
+  } &
+
+  {
+    GPU=$(lspci 2>/dev/null | grep -i 'vga\|3d\|2d' | head -n1 | cut -d ':' -f3- | xargs)
+    GPU=$(printf "%s\n" "$GPU" \
+      | sed -E 's/Corporation//g' \
+      | sed -E 's/Core Processor//g' \
+      | sed -E 's/Integrated Graphics Controller/Integrated Graphics/g' \
+      | sed -E 's/\(rev [^)]+\)//g' \
+      | xargs)
+    printf "%s\n" "$GPU" > "$TMP_DIR_OS_INFO/gpu"
+    log_print verify "GPU info"
+  } &
+
+  {
+    PKG=$(dpkg -l 2>/dev/null | grep -c "^ii")
+    SNAP=$(snap list 2>/dev/null | tail -n +2 | wc -l)
+    printf "%s\n" "$PKG|$SNAP" > "$TMP_DIR_OS_INFO/pkg"
+    log_print verify "Packages info"
+  } &
+
+  {
+    MODEL=$(cat /sys/devices/virtual/dmi/id/product_name 2>/dev/null || printf "N/A")
+    VENDOR=$(cat /sys/devices/virtual/dmi/id/sys_vendor 2>/dev/null || printf "")
+    BIOS=$(cat /sys/devices/virtual/dmi/id/bios_version 2>/dev/null || printf "N/A")
+    printf "%s\n" "$VENDOR $MODEL|$BIOS" > "$TMP_DIR_OS_INFO/hw"
+    log_print verify "Hardware info"
+  } &
+
+  {
+    KERNEL=$(uname -r)
+    ARCH=$(uname -m)
+    [[ "$ARCH" = "x86_64" ]] && OS_TYPE="64-bit" || OS_TYPE="32-bit"
+    GNOME=$(gnome-shell --version 2>/dev/null | awk '{print $3}' || printf "N/A")
+    SESSION=${XDG_SESSION_TYPE:-unknown}
+    printf "%s\n" "$KERNEL|$OS_TYPE|$GNOME|$SESSION" > "$TMP_DIR_OS_INFO/sw"
+    log_print verify "Software info"
+  } &
+
+  wait
+}
+
+GET_OSINFO() {
+  case "$1" in
+    user) echo "${SUDO_USER:-$(whoami)}" ;;
+    host) hostname ;;
+    shell) basename "$SHELL" ;;
+    shell_version) "$SHELL" --version | head -n1 | awk '{print $NF}' ;;
+    ram) free -h | awk '/Mem:/ {print $3 " / " $2}' ;;
+    disk) df -h / | awk 'NR==2 {print $3 " / " $2 " (" $5 ")"}' ;;
+
+    os_name) source /etc/os-release; echo "$NAME" ;;
+    os_version) source /etc/os-release; echo "$VERSION" ;;
+    os_type) [[ "$(uname -m)" = "x86_64" ]] && echo "64-bit" || echo "32-bit" ;;
+
+    cpu) grep "model name" /proc/cpuinfo | head -n1 | cut -d ':' -f2 | xargs ;;
+    cores) nproc ;;
+    gpu) lspci 2>/dev/null | grep -i 'vga\|3d\|2d' | head -n1 | cut -d ':' -f3- | xargs \
+          | sed -E 's/Corporation//g;s/Core Processor//g;s/Integrated Graphics Controller/Integrated Graphics/g;s/\(rev [^)]+\)//g' | xargs ;;
+    pkg) dpkg -l 2>/dev/null | grep -c "^ii" ;;
+    snap) snap list 2>/dev/null | tail -n +2 | wc -l ;;
+
+    hw_model) cat /sys/devices/virtual/dmi/id/product_name 2>/dev/null || echo "N/A" ;;
+    firmware) cat /sys/devices/virtual/dmi/id/bios_version 2>/dev/null || echo "N/A" ;;
+
+    kernel) uname -r ;;
+    gnome) gnome-shell --version 2>/dev/null | awk '{print $3}' || echo "N/A" ;;
+    session) echo "${XDG_SESSION_TYPE:-unknown}" ;;
+  esac
+}
+
+INFO_OSINFO() {
+  {
+    printf "%s\n" "# 🖥️ OS Info"
+    printf "%s\n" ""
+
+    printf "%s\n" "## 👤 Usuario"
+    printf "%s\n" "- **User:** $(GET_OSINFO user)"
+    printf "%s\n" "- **Host:** $(GET_OSINFO host)"
+    printf "%s\n" ""
+
+    printf "%s\n" "## 💿 Información de software"
+    printf "%s\n" "- **OS:** $(GET_OSINFO os_name) $(GET_OSINFO os_type)"
+    printf "%s\n" "- **Versión:** $(GET_OSINFO os_version)"
+    printf "%s\n" "- **Versión del núcleo:** $(GET_OSINFO kernel)"
+    printf "%s\n" "- **Versión de GNOME:** $(GET_OSINFO gnome)"
+    printf "%s\n" "- **Sistema de ventanas:** $(GET_OSINFO session)"
+    printf "%s\n" "- **Shell:** $(GET_OSINFO shell) $(GET_OSINFO shell_version)"
+    printf "%s\n" "- **Paquetes:** $(GET_OSINFO pkg) (dpkg), $(GET_OSINFO snap) (snap)"
+    printf "%s\n" ""
+
+    printf "%s\n" "## ⚙️ Información de hardware"
+    printf "%s\n" "- **Modelo de hardware:** $(GET_OSINFO hw_model)"
+    printf "%s\n" "- **Versión de firmware:** $(GET_OSINFO firmware)"
+    printf "%s\n" "- **CPU:** $(GET_OSINFO cpu) ($(GET_OSINFO cores) cores)"
+    printf "%s\n" "- **GPU:** $(GET_OSINFO gpu)"
+    printf "%s\n" "- **RAM:** $(GET_OSINFO ram)"
+    printf "%s\n" "- **Disk:** $(GET_OSINFO disk)"
+    printf "%s\n" ""
+
+    printf "%s\n" "---"
+    printf "%s\n" "**Fecha de generación:** $(datetime)"
+    printf "%s\n" ""
+  } > "$HOME/OS_Info.md"
+
+  log_print ok "Markdown guardado en $HOME/OS_Info.md"
+}
+
+RENDER_OSINFO() {
+	{
+
+  printf "%s\n" ""
+  printf "%b%-40s%b\n" "        ${COLOR[bold]}${COLOR[italic]}${COLOR[ok]}${SUDO_USER:-$(whoami)}@$HOSTNAME${COLOR[reset]}"
+  printf "%s\n" "      	----------------------"
+  printf "%s\n" ""
+  printf "%b%-40s%b\n" "        ${COLOR[bold]}${COLOR[italic]}${COLOR[cyan]}Información del hardware${COLOR[reset]}"
+  printf "%b%-40s%b\n" "        ${COLOR[bold]}${COLOR[italic]}${COLOR[warn]}OS:${COLOR[reset]}${COLOR[italic]}${COLOR[gray]} $(GET_OSINFO os_name) $(GET_OSINFO os_type)"
+  printf "%b%-40s%b\n" "        ${COLOR[bold]}${COLOR[italic]}${COLOR[warn]}Version:${COLOR[reset]}${COLOR[italic]}${COLOR[gray]} $(GET_OSINFO os_version)"
+  printf "%b%-40s%b\n" "        ${COLOR[bold]}${COLOR[italic]}${COLOR[warn]}Kernel:${COLOR[reset]}${COLOR[italic]}${COLOR[gray]} $(GET_OSINFO kernel)"
+  printf "%b%-40s%b\n" "        ${COLOR[bold]}${COLOR[italic]}${COLOR[warn]}GNOME:${COLOR[reset]}${COLOR[italic]}${COLOR[gray]} $(GET_OSINFO gnome)"
+  printf "%b%-40s%b\n" "        ${COLOR[bold]}${COLOR[italic]}${COLOR[warn]}Session:${COLOR[reset]}${COLOR[italic]}${COLOR[gray]} $(GET_OSINFO session)"
+  printf "%b%-40s%b\n" "        ${COLOR[bold]}${COLOR[italic]}${COLOR[warn]}Shell:${COLOR[reset]}${COLOR[italic]}${COLOR[gray]} $(GET_OSINFO shell) $(GET_OSINFO shell_version)"
+  printf "%b%-40s%b\n" "        ${COLOR[bold]}${COLOR[italic]}${COLOR[warn]}Packages:${COLOR[reset]}${COLOR[italic]}${COLOR[gray]} $(GET_OSINFO pkg) (dpkg), $(GET_OSINFO snap) (snap)"
+  printf "%s\n" ""
+  printf "%b%-40s%b\n" "        ${COLOR[bold]}${COLOR[italic]}${COLOR[cyan]}Información del software${COLOR[reset]}"
+  printf "%b%-40s%b\n" "        ${COLOR[bold]}${COLOR[italic]}${COLOR[warn]}Modelo:${COLOR[reset]}${COLOR[italic]}${COLOR[gray]} $(GET_OSINFO hw_model)"
+  printf "%b%-40s%b\n" "        ${COLOR[bold]}${COLOR[italic]}${COLOR[warn]}Firmware:${COLOR[reset]}${COLOR[italic]}${COLOR[gray]} $(GET_OSINFO firmware)"
+  printf "%b%-40s%b\n" "        ${COLOR[bold]}${COLOR[italic]}${COLOR[warn]}CPU:${COLOR[reset]}${COLOR[italic]}${COLOR[gray]} $(GET_OSINFO cpu) ($(GET_OSINFO cores))"
+  printf "%b%-40s%b\n" "        ${COLOR[bold]}${COLOR[italic]}${COLOR[warn]}GPU:${COLOR[reset]}${COLOR[italic]}${COLOR[gray]} $(GET_OSINFO gpu)"
+  printf "%b%-40s%b\n" "        ${COLOR[bold]}${COLOR[italic]}${COLOR[warn]}RAM:${COLOR[reset]}${COLOR[italic]}${COLOR[gray]} $(GET_OSINFO ram)"
+  printf "%b%-40s%b\n" "        ${COLOR[bold]}${COLOR[italic]}${COLOR[warn]}Disk:${COLOR[reset]}${COLOR[italic]}${COLOR[gray]} $(GET_OSINFO disk)"
+  printf "%s\n" ""
+  printf "%b%-40s%b\n" "      	 ${COLOR[ok]}📅 $(datetime)${COLOR[reset]}"
+  printf "%b%-40s%b\n" "      	 ${COLOR[ok]}⚠️  Info guardada en $HOME/OS_Info.md${COLOR[reset]}"
+	printf "%s\n" ""
+  printf "      	    Presioná SPACE para continuar..." >&3
+	read -n 1 -s -r </dev/tty
+	} >&3
+}
+
+#// Función para mostrar mensajes en pantalla
+#// ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+main() {
+  exec 3>&1
+  START=$SECONDS
+  clear >&3
+  file_log
+  logo
+	printf "%s\n" ""
+  print_banner " 	   🚀 Iniciando Secuencia Post-Install..."
+	printf "%s\n" ""
+	INSTALL_APT_TOOLS
+
+  # update
+	# install_apt
+	# install_snap
+	# remove_firefox
+	# brave
+	# google
+	# vscode
+	# sublime
+	# update
+	# clear >&3
+	# os_info
+  # cleanup
+  OS_INFO
+  INFO_OSINFO
+  sleep 10
+	TIEMPO_TOTAL="$(elapsed_time "$START")"
+	clear >&3
+	RENDER_OSINFO
+  
+  printf "%s\n" ""
+  clear >&3
+  print_banner "         🎉 Secuencia Post-Install completada con éxito!!!
+              Fecha: $(datetime date)
+              Hora de inicio: $START_INITIAL
+              Hora de fin   : $(datetime time)
+              Tiempo total  : $TIEMPO_TOTAL"
+	printf "            Presioná SPACE para continuar..." >&3
+  read -n 1 -s -r </dev/tty
+  clear >&3
+}
+
+main "$@"
