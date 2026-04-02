@@ -27,6 +27,7 @@ HOSTNAME=$(hostname)
 LOG_FILE="$HOME/setup.log"
 START_INITIAL="$(date +"%H:%M:%S")"
 APT_TOOLS=( 
+	curl
 	pciutils
   wget
 	ca-certificates
@@ -34,12 +35,14 @@ APT_TOOLS=(
   apt-transport-https 
   chrome-gnome-shell 
   gnome-browser-connector 
-  font-manager 
   net-tools
   lsd
   dialog
   build-essential
   )
+  SNAP_TOOLS=(
+  jdownloader2
+)
 declare -gA COLOR=(
   [reset]=$'\e[0m'      # Reset / color normal
   [bold]=$'\e[1m'       # Negrita
@@ -56,7 +59,7 @@ declare -gA COLOR=(
   [yellow]=$'\e[33m'    # Amarillo brillante(reemplazar 3 x 9)
   [blue]=$'\e[34m'      # Azul
   [magenta]=$'\e[35m'   # Magenta / violeta
-	[cyan]=$'\e[36m'      # Cyan
+  [cyan]=$'\e[36m'      # Cyan
   [white]=$'\e[37m'     # Blanco
   [gray]=$'\e[90m'      # fondo normal
 )
@@ -186,6 +189,57 @@ case "$ID" in
     exit 1
     ;;
 esac
+
+#* INSTALL_SNAP_TOOLS: Instala paquetes snap declarados en SNAP_TOOLS
+install_snap_apps() {
+
+    log_print info "Instalando paquetes snap desde SNAP_TOOLS..."
+
+    # --- validar array ---
+    if [[ ${#SNAP_TOOLS[@]} -eq 0 ]]; then
+        log_print warn "SNAP_TOOLS está vacío"
+        return 0
+    fi
+
+    # --- verificar snap ---
+    if ! command -v snap >/dev/null 2>&1; then
+        log_print warn "snap no está instalado. Instalando snapd..."
+
+        apt-get update -y
+        apt-get install -y snapd
+
+        systemctl enable --now snapd.socket
+
+        ln -sf /var/lib/snapd/snap /snap
+    else
+        log_print ok "snap disponible"
+    fi
+
+    # --- cache de paquetes instalados ---
+    log_print info "Obteniendo lista de snaps instalados..."
+    local installed
+    installed="$(snap list | awk 'NR>1 {print $1}')"
+
+    # --- loop instalación ---
+    local pkg
+    for pkg in "${SNAP_TOOLS[@]}"; do
+
+        if echo "$installed" | grep -qx "$pkg"; then
+            log_print ok "$pkg ya está instalado"
+        else
+            log_print info "Instalando $pkg..."
+
+            if snap install "$pkg"; then
+                log_print ok "$pkg instalado ✔"
+            else
+                log_print error "Error instalando $pkg"
+            fi
+        fi
+
+    done
+
+    log_print ok "Proceso de instalación snap finalizado"
+}
 
 #* INSTALL_APT_TOOLS: Instala paquetes usando APT_TOOLS
 INSTALL_APT_TOOLS() {
