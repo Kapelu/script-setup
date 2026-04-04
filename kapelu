@@ -15,7 +15,6 @@ if [[ $EUID -ne 0 ]]; then
   printf "%s\n"
   printf "%b%-40s%b\n" "\e[3;32m[+] Elevando privilegios sudo...\e[0m\e[3;90m"
   exec sudo -p "[sudo] contraseña: " bash "$0" "$@"
-  #exec sudo -E bash "$0" "$@"
   printf "%s\n" "\e[0m"
 fi
 
@@ -27,33 +26,11 @@ IFS=$'\n\t'
 #//                  ╚-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-╝
 USUARIO=$(whoami)
 HOSTNAME=$(hostname)
-LOG_FILE="$HOME/setup.log"
+USER_HOME="$(getent passwd "${SUDO_USER:-$USER}" | cut -d: -f6)"
+LOG_FILE="$USER_HOME/setup.log"
 START_INITIAL="$(date +"%H:%M:%S")"
-APT_TOOLS=( 
-	curl
-  wget
-	pciutils
-	ca-certificates
-  apt-transport-https 
-  chrome-gnome-shell 
-  gnome-browser-connector 
-  build-essential
-  gpg 
-  git
-	#snapd 
-  #sudo systemctl enable --now snapd.socket
-  lsd 
-  dialog 
-  totem 
-  rhythmbox
-  inotify-tools
-  net-tools
-  lsd
-  dialog
-  )
-  SNAP_TOOLS=(
-  jdownloader2
-)
+APT_TOOLS=( curl wget pciutils gpg git lsd dialog inotify-tools lsd totem rhythmbox )
+SNAP_TOOLS=( jdownloader2 )
 declare -gA COLOR=(
   [reset]=$'\e[0m'      # Reset / color normal
   [bold]=$'\e[1m'       # Negrita
@@ -86,7 +63,7 @@ ICON_VERIFAIL="⛔ "
 #//                  ╔-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-╗
 #//                  ║         FUNCIONES UTILITARIAS         ║
 #//                  ╚-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-╝
-#* Crea $HOME/setup.log 
+#* Crea $USER_HOME/setup.log 
 file_log() {
   exec 3>&1
   exec 1>>"$LOG_FILE" 2>&1
@@ -190,8 +167,6 @@ print_banner() {
 VALIDAR_DISTRO() {
     log_print info "Validando distribución..."
     sleep 5
-
-
     if [ -f /etc/os-release ]; then
         . /etc/os-release
     else
@@ -200,7 +175,6 @@ VALIDAR_DISTRO() {
         sleep 3
         exit 1
     fi
-
     case "$ID" in
         ubuntu|debian|linuxmint|pop|zorin|elementary|neon)
             log_print ok "Distro soportada: $ID"
@@ -219,44 +193,35 @@ VALIDAR_DISTRO() {
 #* Funcion que actualiza APT
 UPDATE(){
 	log_print info "Actualizando sistema..."
-
-    if ! apt-get update; then
-        log_print verifail " Error en apt-get update"
-        return 1
-    fi
-
-    if ! apt-get dist-upgrade -y; then
-        log_print "Error en dist-upgrade"
-        return 1
-    fi
-
-    log_print ok "Sistema actualizado correctamente."
+	if ! apt-get update; then
+		log_print verifail " Error en apt-get update"
+    return 1
+  fi
+  if ! apt-get dist-upgrade -y; then
+    log_print "Error en dist-upgrade"
+    return 1
+  fi
+  log_print ok "Sistema actualizado correctamente."
 }
 #* Funcion de limpieza del sistema
 CLEAN_SYSTEM() {
     log_print info "🧹 Iniciando limpieza del sistema..."
-
     # Limpiar paquetes innecesarios
     log_print ok "➤ Eliminando paquetes huérfanos..."
     apt-get autoremove -y
-
     # Limpiar caché de paquetes descargados
     log_print ok "➤ Limpiando caché de APT..."
     apt-get clean
     apt-get autoclean
-
     # Limpiar logs antiguos
     log_print ok "➤ Limpiando logs antiguos..."
     journalctl --vacuum-time=7d
-
     # Limpiar miniaturas (thumbnails)
     log_print ok "➤ Eliminando caché de miniaturas..."
-    rm -rf "$HOME/.cache/thumbnails/"*
-
+    rm -rf "$USER_HOME/.cache/thumbnails/"*
     # Limpiar caché de usuario
     log_print ok "➤ Limpiando caché del usuario..."
-    rm -rf "$HOME/.cache/"*
-
+    rm -rf "$USER_HOME/.cache/"*
     # Limpiar paquetes snap si existen
     if command -v snap >/dev/null 2>&1; then
         log_print ok "➤ Limpiando versiones antiguas de Snap..."
@@ -264,33 +229,26 @@ CLEAN_SYSTEM() {
             snap remove "$snapname" --revision="$revision"
         done
     fi
-
 		# Eliminar paquetes en estado "rc" (residuos de configs)
 		log_print ok "➤ Eliminando paquetes residuales..."
 		dpkg -l | awk '/^rc/ { print $2 }' | xargs -r apt-get purge -y
-
     log_print " Limpieza completada."
 		sleep 3
 }
 #* Función full update que llama a update_system y agrega Snap, Flatpak y firmware
 FULL_UPDATE() {
-    log_print info "Iniciando actualización completa del sistema..."
-
     # Llamada a la función UPDATE
     UPDATE || return 1
-
     # Snap
     if command -v snap >/dev/null 2>&1; then
-        log_print ok "➤ Actualizando paquetes Snap..."
+        log_print info "➤ Actualizando paquetes Snap..."
         snap refresh 2>/dev/null
     fi
-
     # Flatpak
     if command -v flatpak >/dev/null 2>&1; then
-        log_print ok " ➤ Actualizando paquetes Flatpak..."
+        log_print info " ➤ Actualizando paquetes Flatpak..."
         flatpak update -y 2>/dev/null
     fi
-
     # Firmware (solo si es UEFI) / Microcode
     if [ -d /sys/firmware/efi ]; then
         if command -v fwupdmgr >/dev/null 2>&1; then
@@ -299,9 +257,8 @@ FULL_UPDATE() {
             fwupdmgr update >/dev/null 2>&1
         fi
     else
-        log_print warn " ➤ Sistema en modo Legacy BIOS, se omite firmware."
+        log_print warn "➤ Sistema en modo Legacy BIOS, se omite firmware."
     fi
-
     log_print ok "Actualización completa finalizada."
 }
 
@@ -309,51 +266,34 @@ FULL_UPDATE() {
 INSTALL_SNAP() {
 
     log_print info "Instalando paquetes snap desde SNAP_TOOLS..."
-
-    # --- validar array ---
-    if [[ ${#SNAP_TOOLS[@]} -eq 0 ]]; then
-        log_print warn "SNAP_TOOLS está vacío"
-        return 0
-    fi
-
-    # --- verificar snap ---
+		
     if ! command -v snap >/dev/null 2>&1; then
         log_print warn "snap no está instalado. Instalando snapd..."
-
         apt-get update -y
         apt-get install -y snapd
-
         systemctl enable --now snapd.socket
-
         ln -sf /var/lib/snapd/snap /snap
     else
         log_print ok "snap disponible"
     fi
-
-    # --- cache de paquetes instalados ---
-    log_print info "Obteniendo lista de snaps instalados..."
+		
+		log_print info "Obteniendo lista de snaps instalados..."
     local installed
     installed="$(snap list | awk 'NR>1 {print $1}')"
-
-    # --- loop instalación ---
     local pkg
     for pkg in "${SNAP_TOOLS[@]}"; do
-
-        if echo "$installed" | grep -qx "$pkg"; then
-            log_print ok "$pkg ya está instalado"
-        else
-            log_print info "Instalando $pkg..."
-
-            if snap install "$pkg"; then
-                log_print ok "$pkg instalado ✔"
-            else
-                log_print error "Error instalando $pkg"
-            fi
-        fi
-
-    done
-
+			if echo "$installed" | grep -qx "$pkg"; then
+				log_print ok "$pkg ya está instalado"
+			else
+				log_print info "Instalando $pkg..."
+				if snap install "$pkg"; then
+					log_print ok "$pkg instalado ✔"
+				else
+					log_print error "Error instalando $pkg"
+				fi
+			fi
     log_print ok "Instalación de paquetes SNAP finalizado"
+		done
 }
 
 #* INSTALL_APT: Instala paquetes usando APT_TOOLS
@@ -376,13 +316,12 @@ INSTALL_APT() {
     fi
   done
   log_print ok "Instalación de pauqetes APT finalizado"
-
 }
 
 #* OS_INFO: Brinda información del sistema
 OS_INFO() {
-  mkdir -p "$HOME/temp/OS_Info"
-  TMP_DIR_OS_INFO="$(mktemp -d "$HOME/temp/OS_Info/temp.XXXXXX")"
+  mkdir -p "$USER_HOME/temp/OS_Info"
+  TMP_DIR_OS_INFO="$(mktemp -d "$USER_HOME/temp/OS_Info/temp.XXXXXX")"
 
   cleanup_osinfo() { [[ -n "${TMP_DIR_OS_INFO:-}" && -d "$TMP_DIR_OS_INFO" ]] && rm -rf "$TMP_DIR_OS_INFO"; }
   trap cleanup_osinfo EXIT
@@ -503,9 +442,9 @@ INFO_OSINFO() {
     printf "%s\n" "---"
     printf "%s\n" "**Fecha de generación:** $(datetime)"
     printf "%s\n" ""
-  } > "$HOME/OS_Info.md"
+  } > "$USER_HOME/OS_Info.md"
 
-  log_print ok "Markdown guardado en $HOME/OS_Info.md"
+  log_print ok "Markdown guardado en $USER_HOME/OS_Info.md"
 }
 
 RENDER_OSINFO() {
@@ -533,7 +472,7 @@ RENDER_OSINFO() {
   printf "%b%-40s%b\n" "        ${COLOR[bold]}${COLOR[italic]}${COLOR[warn]}Disk:${COLOR[reset]}${COLOR[italic]}${COLOR[gray]} $(GET_OSINFO disk)"
   printf "%s\n" ""
   printf "%b%-40s%b\n" "      	 ${COLOR[ok]}📅 $(datetime)${COLOR[reset]}"
-  printf "%b%-40s%b\n" "      	 ${COLOR[ok]}⚠️  Info guardada en $HOME/OS_Info.md${COLOR[reset]}"
+  printf "%b%-40s%b\n" "      	 ${COLOR[ok]}⚠️  Info guardada en $USER_HOME/OS_Info.md${COLOR[reset]}"
 	printf "%s\n" ""
   printf "      	    Presioná SPACE para continuar..." >&3
 	read -n 1 -s -r </dev/tty
