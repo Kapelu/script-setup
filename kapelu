@@ -132,7 +132,6 @@ log_print(){
       printf "%s\n" "$log_line" >>"$LOG_FILE"
     fi
   } 200>/tmp/kapelu.lock
-}
 # ╔════════════════════════════════════════════════════╗
 # │ Uso:                                               │
 # │ log_info "Iniciando kpsetup..."                    │
@@ -152,6 +151,7 @@ log_print(){
 # │ ⚠️ Algunos archivos quedaron sin usar              │
 # │ ❌ Se detectaron errores menores                   │
 # ╚════════════════════════════════════════════════════╝
+}
 
 
 #//                  ╔-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-╗
