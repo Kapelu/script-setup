@@ -114,7 +114,7 @@ log_print() {
   text="$msg"
   local timestamp
   timestamp="$(datetime time)"
-  local console_line="[$timestamp] ${icon}${COLOR[$color]} ${text}${COLOR[reset]}"
+  local console_line="              [$timestamp] ${icon}${COLOR[$color]} ${text}${COLOR[reset]}"
   local log_line="[$timestamp] ${icon} ${text}"
   {
     flock -x 200
@@ -176,30 +176,30 @@ print_banner() {
 #//                  ╚-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-╝
 #* Valida si la distro es UBUNTU
 VALIDAR_DISTRO() {
-    log_print info "Validando distribución..."
-    sleep 5
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-    else
-        clear >&3
-        print_banner " ⛔ No se pudo detectar la Distro‼️"
-        sleep 3
-        exit 1
-    fi
-    case "$ID" in
-        ubuntu|debian|linuxmint|pop|zorin|elementary|neon)
-            log_print ok "Distro soportada: $ID"
-						sleep 2
-						log_print info "Iniciando sistema..."
-						sleep 3
-            ;;
-        *)
-            clear >&3
-            print_banner " ⛔ Distro no soportada: $ID"
-            sleep 3
-            exit 1
-            ;;
-    esac
+	log_print info "Validando distribución..."
+	sleep 5
+  if [ -f /etc/os-release ]; then
+      . /etc/os-release
+  else
+      clear >&3
+      print_banner " ⛔ No se pudo detectar la Distro‼️"
+      sleep 3
+      exit 1
+  fi
+  case "$ID" in
+      ubuntu|debian|linuxmint|pop|zorin|elementary|neon)
+          log_print ok "Distro soportada: $ID"
+					sleep 2
+					log_print info "Iniciando sistema..."
+					sleep 3
+          ;;
+  *)
+          clear >&3
+          print_banner " ⛔ Distro no soportada: $ID"
+          sleep 3
+          exit 1
+          ;;
+  esac
 }
 #* Funcion que actualiza APT
 UPDATE(){
@@ -379,37 +379,37 @@ INSTALL_BRAVE() {
 }
 #* INSTALL_GOOGLE: Instala Google Chrome
 INSTALL_GOOGLE() {
-	log_print run "Instalación de Google Chrome..."
+	log_print run " Instalación de Google Chrome..."
   rm -f /etc/apt/sources.list.d/google-chrome.list
   rm -f /etc/apt/keyrings/google-chrome.gpg
-  log_print run "Agregando clave oficial (keyring)..."
+  log_print run " Agregando clave oficial (keyring)..."
   mkdir -p /etc/apt/keyrings
   curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
     | gpg --dearmor -o /etc/apt/keyrings/google-chrome.gpg
   chmod 644 /etc/apt/keyrings/google-chrome.gpg
-  log_print run "Agregando repositorio..."
+  log_print run " Agregando repositorio..."
   echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" \
     > /etc/apt/sources.list.d/google-chrome.list
-  log_print run "Actualizando repositorios..."
+  log_print run " Actualizando repositorios..."
   apt-get update
-  log_print run "Instalando Google Chrome..."
+  log_print run " Instalando Google Chrome..."
   apt-get install -y google-chrome-stable
   log_print ok "Google Chrome instalado correctamente"
 }
 #* REMOVE_FIREFOX: Desintala completamente Firefox del sistema, sin dejar residuos.
 REMOVE_FIREFOX() {
-  log_print INFO "Detectando instalación de Firefox..."
+  log_print info "Detectando instalación de Firefox..."
   local found=false
   # --- SNAP ---
   if command -v snap >/dev/null 2>&1 && snap list 2>/dev/null | grep -q "^firefox"; then
-    log_print INFO "Firefox detectado como SNAP"
+    log_print info "Firefox detectado como SNAP"
     snap remove --purge firefox
     rm -rf /var/snap/firefox /var/lib/snapd/snaps/firefox*
     found=true
   fi
   # --- APT ---
   if dpkg -s firefox &>/dev/null; then
-    log_print INFO "Firefox detectado como paquete APT"
+    log_print info "Firefox detectado como paquete APT"
     apt-get purge -y firefox
     apt-get autoremove -y --purge
     rm -f /etc/apt/sources.list.d/*firefox*
@@ -417,15 +417,15 @@ REMOVE_FIREFOX() {
   fi
   # --- FLATPAK ---
   if command -v flatpak >/dev/null 2>&1 && flatpak list 2>/dev/null | grep -q "org.mozilla.firefox"; then
-    log_print INFO "Firefox detectado como FLATPAK"
+    log_print info "Firefox detectado como FLATPAK"
     flatpak uninstall -y org.mozilla.firefox --delete-data
     rm -rf /var/lib/flatpak/app/org.mozilla.firefox
     found=true
   fi
   if [ "$found" = false ]; then
-    log_print WARN "Firefox no está instalado por apt, snap ni flatpak"
+    log_print warn " Firefox no está instalado por apt, snap ni flatpak"
   fi
-  log_print INFO "Eliminando residuos..."
+  log_print info "Eliminando residuos..."
   # --- USERS ---
   for dir in /home/* /root; do
     rm -rf  "$dir/.mozilla" \
@@ -440,72 +440,7 @@ REMOVE_FIREFOX() {
           /usr/share/firefox \
           /etc/firefox
 
-  log_print OK "Firefox eliminado completamente"
-}
-#* REMOVE_FIREFOX: Desintala completamente Firefox del sistema, sin dejar residuos.
-
-INSTALL_NODE() {
-  log_print info "Instalando Node.js LTS + pnpm (modo usuario con nvm)..."
-  local USER_HOME
-  USER_HOME="$(eval echo ~${SUDO_USER:-$USER})"
-  local NVM_DIR="$USER_HOME/.nvm"
-  # --- Limpiar instalación previa de nvm ---
-  if [ -d "$NVM_DIR" ]; then
-    log_print run "Eliminando instalación previa de nvm..."
-    rm -rf "$NVM_DIR"
-  fi
-  # Limpiar cargas previas en bashrc/zshrc
-  sed -i '/NVM_DIR/d' "$USER_HOME/.bashrc" 2>/dev/null
-  sed -i '/nvm.sh/d' "$USER_HOME/.bashrc" 2>/dev/null
-  sed -i '/bash_completion.*nvm/d' "$USER_HOME/.bashrc" 2>/dev/null
-  sed -i '/NVM_DIR/d' "$USER_HOME/.zshrc" 2>/dev/null
-  sed -i '/nvm.sh/d' "$USER_HOME/.zshrc" 2>/dev/null
-  # --- Instalar nvm ---
-  log_print info "Descargando e instalando nvm..."
-  if ! curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash; then
-    log_print verifail "Error instalando nvm"
-    return 1
-  fi
-  # --- Cargar nvm en este shell ---
-  export NVM_DIR="$NVM_DIR"
-  [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-  if ! command -v nvm >/dev/null 2>&1; then
-    log_print verifail "nvm no se cargó correctamente"
-    return 1
-  fi
-  # --- Instalar Node LTS con npm actualizado ---
-  log_print run "Instalando Node.js LTS..."
-  if ! nvm install --lts --latest-npm; then
-    log_print verifail "Error instalando Node.js LTS"
-    return 1
-  fi
-  # Usar LTS por defecto
-  nvm alias default 'lts/*'
-  nvm use default
-  # --- Activar pnpm mediante corepack ---
-  log_print info "Activando pnpm con corepack..."
-  if ! corepack enable; then
-    log_print verifail "Error habilitando corepack"
-    return 1
-  fi
-  if ! corepack prepare pnpm@latest --activate; then
-    log_print verifail "Error activando pnpm"
-    return 1
-  fi
-  # --- Verificación ---
-  log_print info "Verificando instalación..."
-  local NODE_V NPM_V PNPM_V
-  NODE_V="$(node -v 2>/dev/null)"
-  NPM_V="$(npm -v 2>/dev/null)"
-  PNPM_V="$(pnpm -v 2>/dev/null)"
-  if [[ -z "$NODE_V" || -z "$NPM_V" || -z "$PNPM_V" ]]; then
-    log_print verifail "La instalación no se completó correctamente"
-    return 1
-  fi
-  log_print verrify "Node: $NODE_V"
-  log_print verrify "npm: $NPM_V"
-  log_print verrify "pnpm: $PNPM_V"
-  log_print ok "Node.js LTS + pnpm instalado correctamente"
+  log_print ok "Firefox eliminado completamente"
 }
 
 
@@ -695,9 +630,10 @@ main() {
 	REMOVE_FIREFOX
 
 
-	# remove_firefox
 	# vscode
 	# sublime
+	# protonVPN
+	# timeshift
 	# clear >&3
   OS_INFO
 	FULL_UPDATE
