@@ -175,30 +175,32 @@ print_banner() {
 #//                  ║           FUNCIONES CORE              ║
 #//                  ╚-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-╝
 #* Valida si la distro es UBUNTU
-VALIDAR_DISTRO() {
-	log_print info "Validando distribución..."
-	sleep 5
+VALIDAR_DISTRO(){
+  log_print info "Validando distribución..."
+  sleep 5
+
   if [ -f /etc/os-release ]; then
-      . /etc/os-release
+    . /etc/os-release
   else
+    clear >&3
+    print_banner "⛔ No se pudo detectar la Distro‼️"
+    sleep 3
+    exit 1
+  fi
+
+  case "$ID" in
+    ubuntu|debian|linuxmint|pop|zorin|elementary|neon)
+      log_print ok "Distro soportada: $ID"
+      sleep 2
+      log_print info "Iniciando sistema..."
+      sleep 3
+      ;;
+    *)
       clear >&3
-      print_banner " ⛔ No se pudo detectar la Distro‼️"
+      print_banner "⛔ Distro no soportada: $ID"
       sleep 3
       exit 1
-  fi
-  case "$ID" in
-      ubuntu|debian|linuxmint|pop|zorin|elementary|neon)
-          log_print ok "Distro soportada: $ID"
-					sleep 2
-					log_print info "Iniciando sistema..."
-					sleep 3
-          ;;
-  *)
-          clear >&3
-          print_banner " ⛔ Distro no soportada: $ID"
-          sleep 3
-          exit 1
-          ;;
+      ;;
   esac
 }
 #* Funcion que actualiza APT
@@ -272,41 +274,40 @@ FULL_UPDATE() {
     fi
     log_print ok "Actualización completa finalizada."
 }
-
 #* INSTALL_SNAP: Instala paquetes snap declarados en SNAP_TOOLS
-INSTALL_SNAP() {
+INSTALL_SNAP(){
+  log_print info "Instalando paquetes snap desde SNAP_TOOLS..."
 
-    log_print info "Instalando paquetes snap desde SNAP_TOOLS..."
-		
-    if ! command -v snap >/dev/null 2>&1; then
-        log_print warn "snap no está instalado. Instalando snapd..."
-        apt-get update -y
-        apt-get install -y snapd
-        systemctl enable --now snapd.socket
-        ln -sf /var/lib/snapd/snap /snap
+  if ! command -v snap >/dev/null 2>&1; then
+    log_print warn "snap no está instalado. Instalando snapd..."
+    apt-get update -y
+    apt-get install -y snapd
+    systemctl enable --now snapd.socket
+    ln -sf /var/lib/snapd/snap /snap
+  else
+    log_print ok "snap disponible"
+  fi
+
+  log_print info "Obteniendo lista de snaps instalados..."
+  local installed
+  installed="$(snap list | awk 'NR>1{print $1}')"
+
+  local pkg
+  for pkg in "${SNAP_TOOLS[@]}"; do
+    if echo "$installed" | grep -qx "$pkg"; then
+      log_print ok "$pkg ya está instalado"
     else
-        log_print ok "snap disponible"
+      log_print info "Instalando $pkg..."
+      if snap install "$pkg"; then
+        log_print ok "$pkg instalado ✔"
+      else
+        log_print error "Error instalando $pkg"
+      fi
     fi
-		
-		log_print info "Obteniendo lista de snaps instalados..."
-    local installed
-    installed="$(snap list | awk 'NR>1 {print $1}')"
-    local pkg
-    for pkg in "${SNAP_TOOLS[@]}"; do
-			if echo "$installed" | grep -qx "$pkg"; then
-				log_print ok "$pkg ya está instalado"
-			else
-				log_print info "Instalando $pkg..."
-				if snap install "$pkg"; then
-					log_print ok "$pkg instalado ✔"
-				else
-					log_print error "Error instalando $pkg"
-				fi
-			fi
-    log_print ok "Instalación de paquetes SNAP finalizado"
-		done
-}
+  done
 
+  log_print ok "Instalación de paquetes SNAP finalizado"
+}
 #* INSTALL_APT: Instala paquetes usando APT_TOOLS
 INSTALL_APT() {
   local pkg
@@ -397,9 +398,11 @@ INSTALL_GOOGLE() {
   log_print ok "Google Chrome instalado correctamente"
 }
 #* REMOVE_FIREFOX: Desintala completamente Firefox del sistema, sin dejar residuos.
-REMOVE_FIREFOX() {
+REMOVE_FIREFOX(){
   log_print info "Detectando instalación de Firefox..."
+
   local found=false
+
   # --- SNAP ---
   if command -v snap >/dev/null 2>&1 && snap list 2>/dev/null | grep -q "^firefox"; then
     log_print info "Firefox detectado como SNAP"
@@ -407,14 +410,16 @@ REMOVE_FIREFOX() {
     rm -rf /var/snap/firefox /var/lib/snapd/snaps/firefox*
     found=true
   fi
+
   # --- APT ---
-  if dpkg -s firefox &>/dev/null; then
+  if dpkg -s firefox >/dev/null 2>&1; then
     log_print info "Firefox detectado como paquete APT"
     apt-get purge -y firefox
     apt-get autoremove -y --purge
     rm -f /etc/apt/sources.list.d/*firefox*
     found=true
   fi
+
   # --- FLATPAK ---
   if command -v flatpak >/dev/null 2>&1 && flatpak list 2>/dev/null | grep -q "org.mozilla.firefox"; then
     log_print info "Firefox detectado como FLATPAK"
@@ -422,23 +427,29 @@ REMOVE_FIREFOX() {
     rm -rf /var/lib/flatpak/app/org.mozilla.firefox
     found=true
   fi
+
   if [ "$found" = false ]; then
-    log_print warn " Firefox no está instalado por apt, snap ni flatpak"
+    log_print warn "Firefox no está instalado por apt, snap ni flatpak"
   fi
+
   log_print info "Eliminando residuos..."
+
   # --- USERS ---
+  local dir
   for dir in /home/* /root; do
-    rm -rf  "$dir/.mozilla" \
-            "$dir/.cache/mozilla" \
-            "$dir/.config/firefox"
+    rm -rf "$dir/.mozilla" \
+           "$dir/.cache/mozilla" \
+           "$dir/.config/firefox"
   done
+
   # --- BINARIOS ---
   rm -f /usr/bin/firefox /usr/local/bin/firefox
+
   # --- SYSTEM ---
-  rm -rf  /usr/lib/firefox \
-          /usr/lib/firefox-esr \
-          /usr/share/firefox \
-          /etc/firefox
+  rm -rf /usr/lib/firefox \
+         /usr/lib/firefox-esr \
+         /usr/share/firefox \
+         /etc/firefox
 
   log_print ok "Firefox eliminado completamente"
 }
@@ -631,6 +642,14 @@ main() {
 
 
 	# vscode
+	# sublime
+	# protonVPN
+	# timeshift
+	# clear >&3# vscode
+	# sublime
+	# protonVPN
+	# timeshift
+	# clear >&3# vscode
 	# sublime
 	# protonVPN
 	# timeshift
