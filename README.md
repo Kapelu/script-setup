@@ -45,6 +45,7 @@ Es una colección de utilidades de terminal ***post-install*** orientadas al ren
 
 
 1. ***Copiar el archivo kpsetup o descargarlo***
+
 2. ***Crear archivo como kpsetup o el nombre que elijan.***
 
 3. ***Dar permisos***
