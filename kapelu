@@ -10,6 +10,7 @@
 #//                  ╔-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-╗
 #//                  ║    ELEVACION DE PRIVILEGIOS SUDO      ║
 #//                  ╚-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-╝
+USER_REAL="${SUDO_USER:-$USER}"
 if [[ $EUID -ne 0 ]]; then
 	clear
   printf "%s\n"
@@ -150,7 +151,7 @@ log_print(){
     flock -x 200
 
     # consola
-    printf "%b%-40s%b\n" "$console_line" >&3
+    printf "%b%-20s%b\n" "$console_line" >&3
 
     # log
     if [ -n "$LOG_FILE" ]; then
@@ -166,7 +167,7 @@ log_print(){
 logo() {
   {
     printf "%b%-40s%b\n" "${COLOR[ok]}"
-    printf " ${COLOR[green_gray]}/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \/ \  ${COLOR[reset]}\n"
+    printf " ${COLOR[green_gray]}/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \/ \ ${COLOR[reset]}\n"
     printf " ${COLOR[green_gray]}\_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/ \_/\_/ ${COLOR[reset]}\n"
     printf " ${COLOR[green_gray]}/ \_/                                                           / \/ \ ${COLOR[reset]}\n"
     printf " ${COLOR[green_gray]}\_/ \  ${COLOR[yellow_gray]}██   ██  █████   █████  █████  ██████  ██    ██  █████${COLOR[green_gray]}   \_/\_/ ${COLOR[reset]}\n"
@@ -182,7 +183,6 @@ logo() {
     printf "%b%-40s%b\n" "${COLOR[reset]}"
   } >&3
 }
-
 print_banner() {
   local msg="$1"
   {
@@ -699,7 +699,6 @@ OS_INFO() {
 
   wait
 }
-
 GET_OSINFO() {
   case "$1" in
     user) echo "${SUDO_USER:-$(whoami)}" ;;
@@ -728,7 +727,6 @@ GET_OSINFO() {
     session) echo "${XDG_SESSION_TYPE:-unknown}" ;;
   esac
 }
-
 INFO_OSINFO() {
   {
     printf "%s\n" "# 🖥️ OS Info"
@@ -765,7 +763,6 @@ INFO_OSINFO() {
 
   log_print ok "Markdown guardado en $USER_HOME/OS_Info.md"
 }
-
 RENDER_OSINFO() {
 	{
 
@@ -798,39 +795,35 @@ RENDER_OSINFO() {
 	read -n 1 -s -r </dev/tty
 	} >&3
 }
-
 #//                  ╔-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-╗
 #//                  ║            FUNCION MAIN()             ║
 #//                  ╚-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-╝
-
 main() {
   exec 3>&1
   START=$SECONDS
   clear >&3
   file_log
   logo
-	printf "%s\n" ""
+  printf "%s\n" ""
   print_banner " 	   🚀 Iniciando Secuencia Post-Install..."
-	printf "%s\n" ""
-	VALIDAR_DISTRO
-	UPDATE
-	INSTALL_SNAP
-	INSTALL_APT
-	INSTALL_BRAVE
-	INSTALL_GOOGLE
-	REMOVE_FIREFOX
+  printf "%s\n" ""
+  VALIDAR_DISTRO
+  UPDATE
+  INSTALL_SNAP
+  INSTALL_APT
+  INSTALL_BRAVE
+  INSTALL_GOOGLE
+  REMOVE_FIREFOX
   INSTALL_CODE
   INSTALL_SUBLIMETEXT
   INSTALL_PROTONVPN
   INSTALL_TIMESHIFT
   OS_INFO
-	FULL_UPDATE
+  FULL_UPDATE
   INFO_OSINFO
-  sleep 10
-	TIEMPO_TOTAL="$(elapsed_time "$START")"
-	clear >&3
-	RENDER_OSINFO
-  
+  TIEMPO_TOTAL="$(elapsed_time "$START")"
+  clear >&3
+  RENDER_OSINFO
   printf "%s\n" ""
   clear >&3
   print_banner "         🎉 Secuencia Post-Install completada con éxito!!!
@@ -838,9 +831,9 @@ main() {
               Hora de inicio: $START_INITIAL
               Hora de fin   : $(datetime time)
               Tiempo total  : $TIEMPO_TOTAL"
-	printf "            Presioná SPACE para continuar..." >&3
+  printf "            Presioná SPACE para continuar..." >&3
   read -n 1 -s -r </dev/tty
-  sudo rm -rf temp
+  rm -rf "$USER_HOME/temp"
   clear >&3
 }
 main "$@"
