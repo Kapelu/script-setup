@@ -59,7 +59,10 @@ APT_TOOLS=(
 	libappindicator3-1
 	libayatana-appindicator3-1
 )
-SNAP_TOOLS=( jdownloader2 )
+SNAP_TOOLS=( 
+  "jdownloader2"
+  "sublime-text --classic"
+    )
 declare -gA COLOR=(
   [reset]=$'\e[0m'      # Reset / color normal
   [bold]=$'\e[1m'       # Negrita
@@ -313,6 +316,239 @@ FULL_UPDATE() {
     fi
     log_print ok "Actualización completa finalizada."
 }
+
+#* PERSONALIZE_UBUNTU: Función que personaliza Escritorio y temas visuales, energia, dock y seguridad
+PERSONALIZE_UBUNTU() {
+  log_print info "Personalizando .bashrc"
+	rebuild_bashrc() {
+  local target="$HOME/.bashrc"
+
+  # eliminar sin preguntar
+  rm -f "$target"
+
+  # crear archivo
+  cat > "$target" <<'EOF'
+# ╔════════════════════════════════════════════════════╗
+# │ .bashrc                                            │
+# │ Versión: 3.0                                       │
+# │ Autor: Daniel Calderon - Kapelu                    │
+# │ Fecha: 04/03/2026                                  │
+# │ WebSite: https://danielcalderon.vercel.app/        │
+# │ Github: https://github.com/Kapelu                  │
+# ╚════════════════════════════════════════════════════╝
+# ~/.bashrc: executed by bash(1) for non-login shells.
+# see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
+# for examples
+
+# Solo ejecutar en shells interactivos
+case $- in
+    *i*) ;;
+      *) return;;
+esac
+
+# HISTORIAL
+HISTCONTROL=ignoreboth
+shopt -s histappend
+HISTSIZE=1000
+HISTFILESIZE=2000
+
+# SHELL OPTIONS
+shopt -s checkwinsize
+
+# LESSPIPE
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+
+# CHROOT
+if [ -z "${debian_chroot:-}" ] && [ -r /etc/debian_chroot ]; then
+    debian_chroot=$(cat /etc/debian_chroot)
+fi
+
+# COLOR SUPPORT
+case "$TERM" in
+    xterm-color|*-256color) color_prompt=yes;;
+esac
+
+# DIRCOLORS + ALIASES BASE
+if [ -x /usr/bin/dircolors ]; then
+    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+
+    if command -v lsd >/dev/null 2>&1; then
+        alias ls='lsd'
+    else
+        alias ls='ls --color=auto'
+    fi
+
+    alias grep='grep --color=auto'
+    alias fgrep='fgrep --color=auto'
+    alias egrep='egrep --color=auto'
+fi
+
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+
+alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
+
+# BASH ALIASES EXTERNOS
+[ -f ~/.bash_aliases ] && . ~/.bash_aliases
+
+# BASH COMPLETION
+if ! shopt -oq posix; then
+  if [ -f /usr/share/bash-completion/bash_completion ]; then
+    . /usr/share/bash-completion/bash_completion
+  elif [ -f /etc/bash_completion ]; then
+    . /etc/bash_completion
+  fi
+fi
+
+#┌-o─o--o─o--o─o-o─o-o─o-o─o-o─o-o─o-o─o-o─o-┐
+#│       CONFIG CUSTOM KAPELU (v3.0)         │
+#└-o─o--o─o--o─o-o─o-o─o-o─o-o─o-o─o-o─o-o─o-┘
+
+# PATH scripts
+SCRIPT_DIR="$HOME/script"
+[ -d "$SCRIPT_DIR" ] || mkdir -p "$SCRIPT_DIR"
+
+case ":$PATH:" in
+  *":$SCRIPT_DIR:"*) ;;
+  *) export PATH="$PATH:$SCRIPT_DIR" ;;
+esac
+
+# chmod inteligente (sin watchers)
+find "$SCRIPT_DIR" -type f \( -name "*.sh" -o ! -name "*.*" \) \
+  -exec grep -Iq "^#!.*bash" {} \; \
+  -exec chmod +x {} \;
+
+# CACHE
+__LAST_PWD=""
+__PKG_MANAGER=""
+__GIT_BRANCH=""
+
+# BUSCAR package.json HACIA ARRIBA
+find_package_json_upwards() {
+  local dir="$PWD"
+  while [ "$dir" != "/" ]; do
+    [ -f "$dir/package.json" ] && { echo "$dir/package.json"; return; }
+    dir=$(dirname "$dir")
+  done
+}
+
+# DETECTAR PACKAGE MANAGER (robusto)
+detect_package_manager() {
+  local pkg_json manager dir="$PWD"
+
+  pkg_json=$(find_package_json_upwards)
+
+  if [ -n "$pkg_json" ]; then
+    if command -v jq >/dev/null 2>&1; then
+      manager=$(jq -r '.packageManager // empty' "$pkg_json" 2>/dev/null | cut -d@ -f1)
+    else
+      manager=$(grep -o '"packageManager"[[:space:]]*:[[:space:]]*"[^"]*"' "$pkg_json" \
+        | sed -E 's/.*"([^"]+)".*/\1/' | cut -d@ -f1)
+    fi
+    [ -n "$manager" ] && { echo "$manager"; return; }
+  fi
+
+  while [ "$dir" != "/" ]; do
+    [ -f "$dir/pnpm-lock.yaml" ] && { echo "pnpm"; return; }
+    [ -f "$dir/yarn.lock" ] && { echo "yarn"; return; }
+    [ -f "$dir/package-lock.json" ] && { echo "npm"; return; }
+    dir=$(dirname "$dir")
+  done
+
+  echo "npm"
+}
+
+# ENSURE PNPM
+ensure_pnpm() {
+  command -v pnpm >/dev/null 2>&1 && return
+
+  local dir="$PWD"
+  while [ "$dir" != "/" ]; do
+    [ -f "$dir/pnpm-lock.yaml" ] && {
+      echo "📦 Instalando pnpm..."
+      npm install -g pnpm >/dev/null 2>&1
+      return
+    }
+    dir=$(dirname "$dir")
+  done
+}
+
+# RUNNER UNIVERSAL
+runpkg() {
+  local gestor
+  gestor=$(detect_package_manager)
+  ensure_pnpm
+  command "$gestor" "$@"
+}
+
+# GIT PROMPT OPTIMIZADO
+git_prompt_status() {
+  git rev-parse --is-inside-work-tree &>/dev/null || return
+
+  local branch dirty ahead behind
+  branch=$(git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD)
+
+  # Cambios locales reales
+  if ! git diff --quiet --ignore-submodules --cached || ! git diff --quiet --ignore-submodules; then
+    dirty=1
+  fi
+
+  # Conflictos
+  if git ls-files -u | grep -q .; then
+    printf "\033[38;5;196m[%s]\033[0m" "$branch"  # 🔴 conflictos
+    return
+  fi
+
+  # Ahead / Behind respecto al upstream
+  if git rev-parse --abbrev-ref @{u} &>/dev/null; then
+    read ahead behind < <(git rev-list --left-right --count HEAD...@{u})
+  else
+    ahead=0
+    behind=0
+  fi
+
+  if [ "$dirty" = "1" ]; then
+    printf "\033[38;5;220m[%s]\033[0m" "$branch"      # 🟡 cambios locales
+  elif [ "$ahead" -gt 0 ] || [ "$behind" -gt 0 ]; then
+    printf "\033[38;5;33m[%s]\033[0m" "$branch"       # 🔵 no sincronizado (push/pull)
+  else
+    printf "\033[38;5;82m[%s]\033[0m" "$branch"       # 🟢 limpio y sincronizado
+  fi
+}
+# CACHE PROMPT (sin overhead)
+update_prompt_cache() {
+  local manager
+  manager=$(detect_package_manager)
+  __PKG_MANAGER=$([ -n "$manager" ] && echo "[$manager]" || echo "")
+  __GIT_BRANCH="$(git_prompt_status)"
+}
+
+PROMPT_COMMAND=update_prompt_cache
+
+# PROMPT FINAL
+PS1=' \[\033[01;32m\]\h:\[\033[01;34m\]${__PKG_MANAGER}${__GIT_BRANCH} \[\033[00m\]\w \[\033[01;34m\]\$ \[\033[00m\]'
+
+# TÍTULO XTERM (se mantiene)
+case "$TERM" in
+xterm*|rxvt*)
+    PS1="\[\e]0;${__PKG_MANAGER}${__GIT_BRANCH}kapelu \w\a\]$PS1"
+    ;;
+*)
+    ;;
+esac
+
+# NVM
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+EOF
+  # aplicar sin reiniciar
+  source "$target"
+}
+
+  log_print ok "✔ Personalización completa"
+}
 #* INSTALL_SNAP: Instala paquetes snap declarados en SNAP_TOOLS
 INSTALL_SNAP(){
   log_print info "Instalando paquetes snap desde SNAP_TOOLS..."
@@ -331,16 +567,19 @@ INSTALL_SNAP(){
   local installed
   installed="$(snap list | awk 'NR>1{print $1}')"
 
-  local pkg
+  local pkg pkg_name
   for pkg in "${SNAP_TOOLS[@]}"; do
-    if echo "$installed" | grep -qx "$pkg"; then
-      log_print ok "$pkg ya está instalado"
+    # Extrae solo el nombre del paquete (primer palabra)
+    pkg_name="${pkg%% *}"
+
+    if echo "$installed" | grep -qx "$pkg_name"; then
+      log_print ok "$pkg_name ya está instalado"
     else
       log_print info "Instalando $pkg..."
-      if snap install "$pkg"; then
-        log_print ok "$pkg instalado ✔"
+      if snap install $pkg; then
+        log_print ok "$pkg_name instalado ✔"
       else
-        log_print error "Error instalando $pkg"
+        log_print error "Error instalando $pkg_name"
       fi
     fi
   done
@@ -670,7 +909,6 @@ INSTALL_CODE() {
   fi
 
   log_print run "Instalando VSCode..."
-	$SUDO snap install sublime-text --classic
   if ! $SUDO apt-get install -y code; then
     log_print error "Error instalando VS Code"
     return 1
@@ -755,238 +993,7 @@ INSTALL_TIMESHIFT() {
     return 1
   fi
 }
-#* PERSONALIZE_UBUNTU: Función que personaliza Escritorio y temas visuales, energia, dock y seguridad
-PERSONALIZE_UBUNTU() {
-  log_print info "Personalizando .bashrc"
-	rebuild_bashrc() {
-  local target="$HOME/.bashrc"
 
-  # eliminar sin preguntar
-  rm -f "$target"
-
-  # crear archivo
-  cat > "$target" <<'EOF'
-# ╔════════════════════════════════════════════════════╗
-# │ .bashrc                                            │
-# │ Versión: 3.0                                       │
-# │ Autor: Daniel Calderon - Kapelu                    │
-# │ Fecha: 04/03/2026                                  │
-# │ WebSite: https://danielcalderon.vercel.app/        │
-# │ Github: https://github.com/Kapelu                  │
-# ╚════════════════════════════════════════════════════╝
-# ~/.bashrc: executed by bash(1) for non-login shells.
-# see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
-# for examples
-
-# Solo ejecutar en shells interactivos
-case $- in
-    *i*) ;;
-      *) return;;
-esac
-
-# HISTORIAL
-HISTCONTROL=ignoreboth
-shopt -s histappend
-HISTSIZE=1000
-HISTFILESIZE=2000
-
-# SHELL OPTIONS
-shopt -s checkwinsize
-
-# LESSPIPE
-[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
-
-# CHROOT
-if [ -z "${debian_chroot:-}" ] && [ -r /etc/debian_chroot ]; then
-    debian_chroot=$(cat /etc/debian_chroot)
-fi
-
-# COLOR SUPPORT
-case "$TERM" in
-    xterm-color|*-256color) color_prompt=yes;;
-esac
-
-# DIRCOLORS + ALIASES BASE
-if [ -x /usr/bin/dircolors ]; then
-    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
-
-    if command -v lsd >/dev/null 2>&1; then
-        alias ls='lsd'
-    else
-        alias ls='ls --color=auto'
-    fi
-
-    alias grep='grep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias egrep='egrep --color=auto'
-fi
-
-alias ll='ls -alF'
-alias la='ls -A'
-alias l='ls -CF'
-
-alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
-
-# BASH ALIASES EXTERNOS
-[ -f ~/.bash_aliases ] && . ~/.bash_aliases
-
-# BASH COMPLETION
-if ! shopt -oq posix; then
-  if [ -f /usr/share/bash-completion/bash_completion ]; then
-    . /usr/share/bash-completion/bash_completion
-  elif [ -f /etc/bash_completion ]; then
-    . /etc/bash_completion
-  fi
-fi
-
-#┌-o─o--o─o--o─o-o─o-o─o-o─o-o─o-o─o-o─o-o─o-┐
-#│       CONFIG CUSTOM KAPELU (v3.0)         │
-#└-o─o--o─o--o─o-o─o-o─o-o─o-o─o-o─o-o─o-o─o-┘
-
-# PATH scripts
-SCRIPT_DIR="$HOME/script"
-[ -d "$SCRIPT_DIR" ] || mkdir -p "$SCRIPT_DIR"
-
-case ":$PATH:" in
-  *":$SCRIPT_DIR:"*) ;;
-  *) export PATH="$PATH:$SCRIPT_DIR" ;;
-esac
-
-# chmod inteligente (sin watchers)
-find "$SCRIPT_DIR" -type f \( -name "*.sh" -o ! -name "*.*" \) \
-  -exec grep -Iq "^#!.*bash" {} \; \
-  -exec chmod +x {} \;
-
-# CACHE
-__LAST_PWD=""
-__PKG_MANAGER=""
-__GIT_BRANCH=""
-
-# BUSCAR package.json HACIA ARRIBA
-find_package_json_upwards() {
-  local dir="$PWD"
-  while [ "$dir" != "/" ]; do
-    [ -f "$dir/package.json" ] && { echo "$dir/package.json"; return; }
-    dir=$(dirname "$dir")
-  done
-}
-
-# DETECTAR PACKAGE MANAGER (robusto)
-detect_package_manager() {
-  local pkg_json manager dir="$PWD"
-
-  pkg_json=$(find_package_json_upwards)
-
-  if [ -n "$pkg_json" ]; then
-    if command -v jq >/dev/null 2>&1; then
-      manager=$(jq -r '.packageManager // empty' "$pkg_json" 2>/dev/null | cut -d@ -f1)
-    else
-      manager=$(grep -o '"packageManager"[[:space:]]*:[[:space:]]*"[^"]*"' "$pkg_json" \
-        | sed -E 's/.*"([^"]+)".*/\1/' | cut -d@ -f1)
-    fi
-    [ -n "$manager" ] && { echo "$manager"; return; }
-  fi
-
-  while [ "$dir" != "/" ]; do
-    [ -f "$dir/pnpm-lock.yaml" ] && { echo "pnpm"; return; }
-    [ -f "$dir/yarn.lock" ] && { echo "yarn"; return; }
-    [ -f "$dir/package-lock.json" ] && { echo "npm"; return; }
-    dir=$(dirname "$dir")
-  done
-
-  echo "npm"
-}
-
-# ENSURE PNPM
-ensure_pnpm() {
-  command -v pnpm >/dev/null 2>&1 && return
-
-  local dir="$PWD"
-  while [ "$dir" != "/" ]; do
-    [ -f "$dir/pnpm-lock.yaml" ] && {
-      echo "📦 Instalando pnpm..."
-      npm install -g pnpm >/dev/null 2>&1
-      return
-    }
-    dir=$(dirname "$dir")
-  done
-}
-
-# RUNNER UNIVERSAL
-runpkg() {
-  local gestor
-  gestor=$(detect_package_manager)
-  ensure_pnpm
-  command "$gestor" "$@"
-}
-
-# GIT PROMPT OPTIMIZADO
-git_prompt_status() {
-  git rev-parse --is-inside-work-tree &>/dev/null || return
-
-  local branch dirty ahead behind
-  branch=$(git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD)
-
-  # Cambios locales reales
-  if ! git diff --quiet --ignore-submodules --cached || ! git diff --quiet --ignore-submodules; then
-    dirty=1
-  fi
-
-  # Conflictos
-  if git ls-files -u | grep -q .; then
-    printf "\033[38;5;196m[%s]\033[0m" "$branch"  # 🔴 conflictos
-    return
-  fi
-
-  # Ahead / Behind respecto al upstream
-  if git rev-parse --abbrev-ref @{u} &>/dev/null; then
-    read ahead behind < <(git rev-list --left-right --count HEAD...@{u})
-  else
-    ahead=0
-    behind=0
-  fi
-
-  if [ "$dirty" = "1" ]; then
-    printf "\033[38;5;220m[%s]\033[0m" "$branch"      # 🟡 cambios locales
-  elif [ "$ahead" -gt 0 ] || [ "$behind" -gt 0 ]; then
-    printf "\033[38;5;33m[%s]\033[0m" "$branch"       # 🔵 no sincronizado (push/pull)
-  else
-    printf "\033[38;5;82m[%s]\033[0m" "$branch"       # 🟢 limpio y sincronizado
-  fi
-}
-# CACHE PROMPT (sin overhead)
-update_prompt_cache() {
-  local manager
-  manager=$(detect_package_manager)
-  __PKG_MANAGER=$([ -n "$manager" ] && echo "[$manager]" || echo "")
-  __GIT_BRANCH="$(git_prompt_status)"
-}
-
-PROMPT_COMMAND=update_prompt_cache
-
-# PROMPT FINAL
-PS1=' \[\033[01;32m\]\h:\[\033[01;34m\]${__PKG_MANAGER}${__GIT_BRANCH} \[\033[00m\]\w \[\033[01;34m\]\$ \[\033[00m\]'
-
-# TÍTULO XTERM (se mantiene)
-case "$TERM" in
-xterm*|rxvt*)
-    PS1="\[\e]0;${__PKG_MANAGER}${__GIT_BRANCH}kapelu \w\a\]$PS1"
-    ;;
-*)
-    ;;
-esac
-
-# NVM
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-EOF
-  # aplicar sin reiniciar
-  source "$target"
-}
-
-  log_print ok "✔ Personalización completa"
-}
 #* OS_INFO: Brinda información del sistema
 OS_INFO() {
   mkdir -p "$USER_HOME/temp/OS_Info"
@@ -1159,6 +1166,7 @@ main() {
   printf "%s\n" ""
   VALIDAR_DISTRO
   UPDATE
+  PERSONALIZE_UBUNTU
   INSTALL_SNAP
   INSTALL_APT
   INSTALL_BRAVE
@@ -1168,7 +1176,6 @@ main() {
   INSTALL_CODE
   INSTALL_PROTONVPN
   INSTALL_TIMESHIFT
-  #PERSONALIZE_UBUNTU
   OS_INFO
   FULL_UPDATE
   INFO_OSINFO
