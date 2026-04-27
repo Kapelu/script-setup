@@ -947,11 +947,11 @@ git_prompt_status() {
   fi
 
   if [ "$dirty" = "1" ]; then
-    printf "\033[38;5;220m[%s]\033[0m" "$branch"  # 🟡 cambios locales
+    printf "\033[38;5;220m[%s]\033[0m" "$branch"      # 🟡 cambios locales
   elif [ "$ahead" -gt 0 ] || [ "$behind" -gt 0 ]; then
-    printf "\033[38;5;214m[%s]\033[0m" "$branch"  # 🟠 no sincronizado (push/pull)
+    printf "\033[38;5;33m[%s]\033[0m" "$branch"       # 🔵 no sincronizado (push/pull)
   else
-    printf "\033[38;5;82m[%s]\033[0m" "$branch"   # 🟢 limpio y sincronizado
+    printf "\033[38;5;82m[%s]\033[0m" "$branch"       # 🟢 limpio y sincronizado
   fi
 }
 # CACHE PROMPT (sin overhead)
