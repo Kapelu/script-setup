@@ -226,38 +226,65 @@ print_banner() {
 #//                  ║           FUNCIONES CORE              ║
 #//                  ╚-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-╝
 #* Valida si la distro es UBUNTU
-VALIDAR_DISTRO(){
-  log_print info "Validando distribución..."
-  sleep 5
+VALIDAR_DISTRO() {
+  log_print INFO "Validando distribución..."
 
-  if [ -f /etc/os-release ]; then
+  if [[ -r /etc/os-release ]]; then
     . /etc/os-release
   else
-    clear >&3
-    print_banner "⛔ No se pudo detectar la Distro‼️"
-    sleep 3
+    log_print ERROR "No se pudo leer /etc/os-release"
+    print_banner "⛔ No se pudo detectar la Distro"
     exit 1
   fi
 
+  log_print OK "ID=$ID VERSION_ID=$VERSION_ID ID_LIKE=$ID_LIKE"
+
   case "$ID" in
-    ubuntu|debian|linuxmint|pop|zorin|elementary|neon)
-      log_print ok "Distro soportada: $ID"
-      sleep 2
-      log_print info "Iniciando sistema..."
-      sleep 3
+    ubuntu)
+      case "$VERSION_ID" in
+        24.*|26.*)
+          log_print OK "Ubuntu compatible: $VERSION_ID"
+          ;;
+        *)
+          clear
+          print_banner "⛔ Ubuntu no soportado: $VERSION_ID"
+          exit 1
+          ;;
+      esac
       ;;
+      
+    debian)
+      case "$VERSION_ID" in
+        12|13)
+          log_print OK "Debian compatible: $VERSION_ID"
+          ;;
+        *)
+          clear
+          print_banner "⛔ Debian no soportado: $VERSION_ID"
+          exit 1
+          ;;
+      esac
+      ;;
+      
     *)
-      clear >&3
-      print_banner "⛔ Distro no soportada: $ID"
-      sleep 3
-      exit 1
+      # fallback usando ID_LIKE (más robusto)
+      if [[ "$ID_LIKE" =~ debian ]]; then
+        log_print WARN "Distro derivada detectada ($ID), tratada como Debian-like"
+      else
+        clear
+        print_banner "⛔ Distro no soportada: $ID"
+        exit 1
+      fi
       ;;
   esac
+
+  log_print INFO "Sistema validado correctamente"
 }
+
 #* Funcion que actualiza APT
 UPDATE(){
 	log_print info "Actualizando sistema..."
-	if ! $SUDO apt-get update; then
+	if ! $SUDO apt-get update -y; then
 		log_print verifail "Error en $SUDO apt-get update"
     return 1
   fi
@@ -578,9 +605,9 @@ INSTALL_SNAP(){
 
   if ! command -v snap >/dev/null 2>&1; then
     log_print warn "snap no está instalado. Instalando snapd..."
-    $SUDO apt-get update -y
+    #$SUDO apt-get update -y
     $SUDO apt-get install -y snapd
-    systemctl enable --now snapd.socket
+    $SUDO systemctl enable --now snapd
     ln -sf /var/lib/snapd/snap /snap
   else
     log_print ok "snap disponible"
@@ -941,8 +968,6 @@ INSTALL_CODE() {
 	log_print ok "Versión" code --version
 
 }
-#* INSTALL_SUBLIMETEXT: Instala sublime text desde el repositorio de APT
-#INSTALL_SUBLIMETEXT() {}
 #* INSTALL_PROTONVPN: Instala protonVPN desde el repositorio de APT
 INSTALL_PROTONVPN() {
   log_print INFO "Instalando Proton VPN (APT repo oficial)..."
